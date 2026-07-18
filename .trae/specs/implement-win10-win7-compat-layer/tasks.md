@@ -31,9 +31,9 @@
   - [x] SubTask 2.2.5: hook `GetProcAddress` 与 `LdrGetProcedureAddress`，对查询 Win10 新 API 的请求返回兼容层实现（覆盖 VxKex 最大短板）
   - [x] SubTask 2.2.6: 验证：测试程序通过 `GetProcAddress` 拿到 `SetThreadDescription` 并调用成功
 - [ ] Task 2.3: API Set 虚拟解析层（L2）[D:2.2]
-  - [ ] SubTask 2.3.1: 设计并实现"虚拟名 → 实现源"映射表配置格式（JSON 或 INI），覆盖 `api-ms-win-core-*`、`api-ms-win-crt-*`、`ext-ms-win-*`
-  - [ ] SubTask 2.3.2: 实现解析逻辑：导入表出现 `api-ms-win-*` 名时查表，转发到 Win7 真实 DLL 或本地模拟层
-  - [ ] SubTask 2.3.3: 预置映射表初版：含 `api-ms-win-core-synch-l1-2-0`、`api-ms-win-core-timezone-l1-1-0`、`api-ms-win-core-memory-l1-1-3+`、`api-ms-win-core-winrt-*`（标注不可解）等
+  - [x] SubTask 2.3.1: 设计并实现"虚拟名 → 实现源"映射表配置格式（JSON 或 INI），覆盖 `api-ms-win-core-*`、`api-ms-win-crt-*`、`ext-ms-win-*`
+  - [x] SubTask 2.3.2: 实现解析逻辑：导入表出现 `api-ms-win-*` 名时查表，转发到 Win7 真实 DLL 或本地模拟层
+  - [x] SubTask 2.3.3: 预置映射表初版：含 `api-ms-win-core-synch-l1-2-0`、`api-ms-win-core-timezone-l1-1-0`、`api-ms-win-core-memory-l1-1-3+`、`api-ms-win-core-winrt-*`（标注不可解）等
   - [ ] SubTask 2.3.4: 验证：测试程序导入 `api-ms-win-core-synch-l1-2-0.dll` 能正常解析到 `WaitOnAddress` 本地实现
 
 ## 阶段 3：注入路径与配置
@@ -50,7 +50,7 @@
   - [ ] SubTask 3.3.1: 实现注册表注入路径，UI 显式标注"会触发反调试检测/与沙箱冲突"
   - [ ] SubTask 3.3.2: 实现卸载时清理注册表条目，保证可逆
 - [ ] Task 3.4: 配置 GUI 与右键属性页 [D:3.1]
-  - [ ] SubTask 3.4.1: 实现按程序粒度配置存储（配置文件，不写 HKLM 系统键）
+  - [x] SubTask 3.4.1: 实现按程序粒度配置存储（配置文件，不写 HKLM 系统键）
   - [ ] SubTask 3.4.2: 实现资源管理器右键属性页 Shell 扩展（启用/关闭、选择注入路径、版本伪装选项）
   - [ ] SubTask 3.4.3: 实现自动推荐：扫描目标 EXE 导入表/manifest，自动推断需要的兼容选项
   - [ ] SubTask 3.4.4: 在 UI 对 WinRT/UWP/D3D12/VBS/TPM2.0 依赖程序显式标注"不支持"
@@ -72,10 +72,10 @@
 - [ ] Task 4.4: DPI 与 Shell API 回退 [P,D:2.2]
   - [ ] SubTask 4.4.1: `SetProcessDpiAwarenessContext` 回退到 `SetProcessDPIAware`
   - [ ] SubTask 4.4.2: 其他 DPI 新 API 提供 no-op 或合理回退
-- [ ] Task 4.5: CNG 新算法本地实现 [P,D:2.2]
-  - [ ] SubTask 4.5.1: 本地实现 ChaCha20-Poly1305（或集成可用开源实现，注意许可证）
-  - [ ] SubTask 4.5.2: 本地实现 HKDF
-  - [ ] SubTask 4.5.3: 在 BCrypt provider 层暴露这些算法，使 `BCryptOpenAlgorithmProvider("CHACHA20_POLY1305")` 可用
+- [x] Task 4.5: CNG 新算法本地实现 [P,D:2.2]
+  - [x] SubTask 4.5.1: 本地实现 ChaCha20-Poly1305（或集成可用开源实现，注意许可证）
+  - [x] SubTask 4.5.2: 本地实现 HKDF
+  - [x] SubTask 4.5.3: 在 BCrypt provider 层暴露这些算法，使 `BCryptOpenAlgorithmProvider("CHACHA20_POLY1305")` 可用
 - [ ] Task 4.6: UCRT 前置检测 [P,D:3.4]
   - [ ] SubTask 4.6.1: 检测 `ucrtbase.dll` 是否存在于系统目录（KB2999226）
   - [ ] SubTask 4.6.2: 检测 `vcruntime140.dll`/`msvcp140.dll`（VCRedist）
@@ -84,8 +84,8 @@
 ## 阶段 5：测试、诊断与发布
 
 - [ ] Task 5.1: 细粒度日志与诊断报告 [D:4.*]
-  - [ ] SubTask 5.1.1: 实现日志记录：被拦截的 API、缺失导出查询、反调试触发点、版本伪装命中
-  - [ ] SubTask 5.1.2: 实现"一键导出诊断报告"（依赖缺失树、调用流摘要）
+  - [x] SubTask 5.1.1: 实现日志记录：被拦截的 API、缺失导出查询、反调试触发点、版本伪装命中
+  - [x] SubTask 5.1.2: 实现"一键导出诊断报告"（依赖缺失树、调用流摘要）
 - [ ] Task 5.2: 兼容性测试矩阵 [D:5.1]
   - [ ] SubTask 5.2.1: 建立测试用例集：含高子系统版本 EXE、导入 `api-ms-win-core-synch-l1-2-0` 的 EXE、`GetProcAddress` 动态解析新 API 的 EXE、自检 Win10 版本的 EXE
   - [ ] SubTask 5.2.2: 在真实 Win7 SP1 + KB 环境验证每个用例

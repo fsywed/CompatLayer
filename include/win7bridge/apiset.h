@@ -30,6 +30,9 @@ extern "C" {
 #define APISET_OK              0   /* 成功                            */
 #define APISET_ERR_INVALID_ARG (-1) /* 入参非法                        */
 #define APISET_ERR_NOMEM       (-2) /* 内存分配失败                    */
+#define APISET_ERR_PARSE       (-3) /* JSON 语法错误                   */
+#define APISET_ERR_IO          (-4) /* 文件 IO 错误                    */
+#define APISET_ERR_SCHEMA      (-5) /* schema 字段不匹配               */
 
 /* ------------------------------------------------------------------ */
 /* 目标类型                                                            */
@@ -111,6 +114,50 @@ int apiset_resolve_imports(const ApiSetMap* m, PeInfo* pe);
  * 返回：1 是虚拟名；0 不是。
  */
 int apiset_is_virtual_name(const char* dll_name);
+
+/*
+ * apiset_load_from_json - 从 JSON 字符串加载映射表
+ *   m         ：目标映射表（追加到已有条目之后，不清空）
+ *   json_text ：NUL 结尾的 JSON 文本
+ *   arena_out ：若非 NULL，成功时接收 malloc 的字符串 arena 指针，
+ *               调用方负责 apiset_free_arena 释放；失败时被置 NULL
+ *   JSON 格式见 docs/apiset-json-config.md：
+ *     { "schema":"win7bridge.apiset/v1",
+ *       "entries":[ {"virtual_name":"...","kind":"to_real_dll|to_local|unsolvable",
+ *                    "host_dll":"...","note":"..."}, ... ] }
+ * 返回：APISET_OK 成功；APISET_ERR_PARSE/SCHEMA/NOMEM/INVALID_ARG 出错。
+ *   失败时不修改 m 的状态，arena 已释放并置 NULL。
+ */
+int apiset_load_from_json(ApiSetMap* m, const char* json_text,
+                          void** arena_out);
+
+/*
+ * apiset_load_from_file - 从 JSON 文件加载映射表
+ *   path     ：UTF-8 / ASCII 路径
+ *   arena_out：同 apiset_load_from_json
+ *   文件 IO 用标准 C fopen/fread/fclose，不依赖 windows.h。
+ * 返回：APISET_OK 成功；APISET_ERR_IO 文件无法打开/读取；
+ *       其余同 apiset_load_from_json。
+ */
+int apiset_load_from_file(ApiSetMap* m, const char* path,
+                          void** arena_out);
+
+/*
+ * apiset_free_arena - 释放 apiset_load_from_json/file 分配的字符串 arena
+ *   arena：之前通过 arena_out 接收的指针；可为 NULL（无操作）
+ *   注意：不释放 ApiSetMap.entries，那由 apiset_free 负责。
+ *       arena 释放后，映射表中所有字符串指针变为悬空，调用方应确保
+ *       不再使用映射表，或先 apiset_free(&m) 再 apiset_free_arena。
+ */
+void apiset_free_arena(void* arena);
+
+/*
+ * apiset_free - 释放映射表本身（与 apiset_init 对应）
+ *   m：映射表；可为 NULL（无操作）
+ *   不释放 entries 中字符串指针所指向的内存（字符串生命周期由调用方
+ *   或 arena 管理）。调用后 m 被重置为空表状态。
+ */
+void apiset_free(ApiSetMap* m);
 
 #ifdef __cplusplus
 }

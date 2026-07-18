@@ -24,7 +24,10 @@
  *      - LoadLibraryA：对 api-ms-win-core-synch / api-ms-win-core-crt
  *        虚拟 DLL 返回 kernel32.dll 作替身，使后续 GetProcAddress 命中
  *        hook。
- *      - BCryptOpenAlgorithmProvider：对 CHACHA20_POLY1305 返回伪句柄。
+ *      - BCryptOpenAlgorithmProvider/Close/GetProperty/GenerateKey/
+ *        DestroyKey/Encrypt/Decrypt：对 CHACHA20_POLY1305 经
+ *        cng_provider 适配层路由到 cng_chacha20 本地实现；HKDF 仅
+ *        Open/Close。其余算法委托原函数。
  *
  *   3. 全局状态
  *      g_hooks[16]：InlineHook 句柄数组；g_hook_count 已用数量。
@@ -36,7 +39,8 @@
  *      避免 BYTE/WORD/DWORD 等 typedef 与 windows.h 在 64 位 host
  *      （unsigned long=8B vs uint32_t=4B）上重定义冲突。spoof / sim
  *      各模块函数原型以手动 extern 声明引入，InlineHook 结构体来自
- *      inline_hook.h，保证与实现侧 ABI 一致。
+ *      inline_hook.h，保证与实现侧 ABI 一致。cng_provider.h 是平台
+ *      无关头（仅 uint8_t/size_t/uint32_t），可直接 include。
  */
 
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
@@ -55,6 +59,7 @@
  */
 #define WIN7BRIDGE_PE_TYPES_H
 #include "win7bridge/inline_hook.h"
+#include "win7bridge/cng_provider.h"
 
 /* ------------------------------------------------------------------ */
 /* windows.h 兜底定义（fake_windows.h 未提供的项）                     */
@@ -96,6 +101,44 @@ typedef LONG NTSTATUS;
 /* DWORDLONG：fake_windows.h 仅有 ULONGLONG，Windows SDK 中二者等价 */
 #ifndef DWORDLONG
 typedef ULONGLONG DWORDLONG;
+#endif
+
+/* ------------------------------------------------------------------ */
+/* BCrypt AEAD 认证信息结构（Windows SDK bcrypt.h 中的定义，本地复制）  */
+/*   用于 BCryptEncrypt/BCryptDecrypt 的 pPaddingInfo 参数。            */
+/*   字段顺序与 Windows SDK 一致，编译器按目标架构自动对齐。            */
+/* ------------------------------------------------------------------ */
+#ifndef _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED
+#define _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED
+typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
+    ULONG      cbSize;
+    ULONG      dwInfoVersion;
+    PUCHAR     pbNonce;
+    ULONG      cbNonce;
+    PUCHAR     pbAuthData;
+    ULONG      cbAuthData;
+    PUCHAR     pbTag;
+    ULONG      cbTag;
+    PUCHAR     pbMacContext;
+    ULONG      cbMacContext;
+    ULONG      cbAAD;
+    ULONGLONG  cbData;
+    ULONGLONG  cbDataOffset;
+} BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO;
+#endif /* _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED */
+
+/* NTSTATUS 常量（Windows SDK ntstatus.h 子集） */
+#ifndef STATUS_SUCCESS
+#define STATUS_SUCCESS 0x00000000uL
+#endif
+#ifndef STATUS_INVALID_PARAMETER
+#define STATUS_INVALID_PARAMETER 0xC000000DuL
+#endif
+#ifndef STATUS_NOT_FOUND
+#define STATUS_NOT_FOUND 0xC0000225uL
+#endif
+#ifndef STATUS_AUTH_TAG_MISMATCH
+#define STATUS_AUTH_TAG_MISMATCH 0xC000A002uL
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -141,6 +184,18 @@ static BOOL       (WINAPI *g_orig_VerifyVersionInfoW)(OSVERSIONINFOEXW*,
 static HMODULE    (WINAPI *g_orig_LoadLibraryA)(LPCSTR);
 static NTSTATUS   (WINAPI *g_orig_BCryptOpenAlgorithmProvider)(
     void**, const wchar_t*, const wchar_t*, DWORD);
+static NTSTATUS   (WINAPI *g_orig_BCryptCloseAlgorithmProvider)(void*, ULONG);
+static NTSTATUS   (WINAPI *g_orig_BCryptGetProperty)(
+    void*, const wchar_t*, PUCHAR, ULONG, ULONG*, ULONG);
+static NTSTATUS   (WINAPI *g_orig_BCryptGenerateSymmetricKey)(
+    void*, void**, PUCHAR, ULONG, PUCHAR, ULONG, ULONG);
+static NTSTATUS   (WINAPI *g_orig_BCryptDestroyKey)(void*);
+static NTSTATUS   (WINAPI *g_orig_BCryptEncrypt)(
+    void*, PUCHAR, ULONG, void*, PUCHAR, ULONG,
+    PUCHAR, ULONG, ULONG*, ULONG);
+static NTSTATUS   (WINAPI *g_orig_BCryptDecrypt)(
+    void*, PUCHAR, ULONG, void*, PUCHAR, ULONG,
+    PUCHAR, ULONG, ULONG*, ULONG);
 
 /* ------------------------------------------------------------------ */
 /* hook 函数                                                           */
@@ -223,19 +278,183 @@ static HMODULE WINAPI hook_LoadLibraryA(LPCSTR lib)
     return g_orig_LoadLibraryA(lib);
 }
 
-/*
- * hook_BCryptOpenAlgorithmProvider - CHACHA20_POLY1305 返回伪句柄
- *   其他算法委托原始函数。
- */
+/* ------------------------------------------------------------------ */
+/* BCrypt provider hook 层                                             */
+/*   对 CHACHA20_POLY1305 / HKDF 经 cng_provider 适配层路由到本地算法； */
+/*   非本地句柄一律委托 g_orig_* 原函数。                              */
+/* ------------------------------------------------------------------ */
+
+/* 算法名 → 枚举映射 */
+static w7b_alg_type bcrypt_map_alg(const wchar_t* algId)
+{
+    if (!algId) return W7B_ALG_NONE;
+    if (wcscmp(algId, L"CHACHA20_POLY1305") == 0) return W7B_ALG_CHACHA20_POLY1305;
+    if (wcscmp(algId, L"HKDF") == 0) return W7B_ALG_HKDF;
+    return W7B_ALG_NONE;
+}
+
+/* 属性名 → 枚举映射 */
+static w7b_prop_id bcrypt_map_prop(const wchar_t* prop)
+{
+    if (!prop) return W7B_PROP_NONE;
+    if (wcscmp(prop, L"KeyLength") == 0)     return W7B_PROP_KEY_LENGTH;
+    if (wcscmp(prop, L"AuthTagLength") == 0) return W7B_PROP_AUTH_TAG_LENGTH;
+    if (wcscmp(prop, L"ObjectLength") == 0)  return W7B_PROP_OBJECT_LENGTH;
+    if (wcscmp(prop, L"BlockLength") == 0)   return W7B_PROP_BLOCK_LENGTH;
+    return W7B_PROP_NONE;
+}
+
 static NTSTATUS WINAPI hook_BCryptOpenAlgorithmProvider(
     void** phAlg, const wchar_t* algId, const wchar_t* impl, DWORD flags)
 {
-    if (algId && wcscmp(algId, L"CHACHA20_POLY1305") == 0) {
-        /* 返回伪句柄（非 NULL），让 case_07 PASS */
-        if (phAlg) *phAlg = (void*)0x57424342;  /* "WBCB" magic */
-        return 0;  /* STATUS_SUCCESS */
+    w7b_alg_type alg = bcrypt_map_alg(algId);
+    if (alg != W7B_ALG_NONE) {
+        w7b_alg_handle* h = NULL;
+        if (w7b_provider_open_alg(alg, &h) == 0) {
+            if (phAlg) *phAlg = (void*)h;
+            return STATUS_SUCCESS;
+        }
+        return STATUS_INVALID_PARAMETER;
     }
     return g_orig_BCryptOpenAlgorithmProvider(phAlg, algId, impl, flags);
+}
+
+static NTSTATUS WINAPI hook_BCryptCloseAlgorithmProvider(
+    void* hAlg, ULONG flags)
+{
+    if (w7b_is_alg_handle(hAlg)) {
+        w7b_provider_close_alg((w7b_alg_handle*)hAlg);
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptCloseAlgorithmProvider(hAlg, flags);
+}
+
+static NTSTATUS WINAPI hook_BCryptGetProperty(
+    void* hObject, const wchar_t* pszProperty,
+    PUCHAR pbOutput, ULONG cbOutput, ULONG* pcbResult, ULONG flags)
+{
+    if (w7b_is_alg_handle(hObject)) {
+        w7b_prop_id prop = bcrypt_map_prop(pszProperty);
+        size_t result = 0;
+        int rc;
+        if (prop == W7B_PROP_NONE) return STATUS_NOT_FOUND;
+        rc = w7b_provider_get_property((w7b_alg_handle*)hObject, prop,
+                                        pbOutput, cbOutput, &result);
+        if (rc != 0) return STATUS_INVALID_PARAMETER;
+        if (pcbResult) *pcbResult = (ULONG)result;
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptGetProperty(hObject, pszProperty,
+                                    pbOutput, cbOutput, pcbResult, flags);
+}
+
+static NTSTATUS WINAPI hook_BCryptGenerateSymmetricKey(
+    void* hAlgorithm, void** phKey,
+    PUCHAR pbKeyObject, ULONG cbKeyObject,
+    PUCHAR pbSecret, ULONG cbSecret, ULONG flags)
+{
+    if (w7b_is_alg_handle(hAlgorithm)) {
+        w7b_key_handle* kh = NULL;
+        int rc = w7b_provider_gen_key((w7b_alg_handle*)hAlgorithm, &kh,
+                                       pbSecret, cbSecret);
+        if (rc != 0) return STATUS_INVALID_PARAMETER;
+        /* pbKeyObject/cbKeyObject 由 provider 自行管理，忽略调用方缓冲 */
+        (void)pbKeyObject; (void)cbKeyObject;
+        if (phKey) *phKey = (void*)kh;
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptGenerateSymmetricKey(hAlgorithm, phKey,
+        pbKeyObject, cbKeyObject, pbSecret, cbSecret, flags);
+}
+
+static NTSTATUS WINAPI hook_BCryptDestroyKey(void* hKey)
+{
+    if (w7b_is_key_handle(hKey)) {
+        w7b_provider_destroy_key((w7b_key_handle*)hKey);
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptDestroyKey(hKey);
+}
+
+static NTSTATUS WINAPI hook_BCryptEncrypt(
+    void* hKey, PUCHAR pbInput, ULONG cbInput, void* pPaddingInfo,
+    PUCHAR pbIV, ULONG cbIV,
+    PUCHAR pbOutput, ULONG cbOutput, ULONG* pcbResult, ULONG flags)
+{
+    if (w7b_is_key_handle(hKey)) {
+        BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* auth = NULL;
+        const uint8_t* nonce = NULL;
+        size_t nonce_len = 0;
+        const uint8_t* aad = NULL;
+        size_t aad_len = 0;
+        uint8_t* tag = NULL;
+        size_t tag_len = 0;
+        int rc;
+
+        /* AEAD 模式：pPaddingInfo 指向 AUTH_INFO，nonce/AAD/tag 从中提取 */
+        if (pPaddingInfo) {
+            auth = (BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO*)pPaddingInfo;
+            nonce = auth->pbNonce;
+            nonce_len = auth->cbNonce;
+            aad = auth->pbAuthData;
+            aad_len = auth->cbAuthData;
+            tag = auth->pbTag;
+            tag_len = auth->cbTag;
+        }
+        /* pbIV/cbIV 对 AEAD 模式无意义（nonce 在 auth info 中） */
+        (void)pbIV; (void)cbIV;
+
+        rc = w7b_provider_encrypt((w7b_key_handle*)hKey,
+                                   nonce, nonce_len,
+                                   aad, aad_len,
+                                   pbInput, cbInput,
+                                   pbOutput, tag, tag_len);
+        if (rc != 0) return STATUS_INVALID_PARAMETER;
+        if (pcbResult) *pcbResult = cbInput;  /* 密文长度 == 明文长度 */
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptEncrypt(hKey, pbInput, cbInput, pPaddingInfo,
+        pbIV, cbIV, pbOutput, cbOutput, pcbResult, flags);
+}
+
+static NTSTATUS WINAPI hook_BCryptDecrypt(
+    void* hKey, PUCHAR pbInput, ULONG cbInput, void* pPaddingInfo,
+    PUCHAR pbIV, ULONG cbIV,
+    PUCHAR pbOutput, ULONG cbOutput, ULONG* pcbResult, ULONG flags)
+{
+    if (w7b_is_key_handle(hKey)) {
+        BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO* auth = NULL;
+        const uint8_t* nonce = NULL;
+        size_t nonce_len = 0;
+        const uint8_t* aad = NULL;
+        size_t aad_len = 0;
+        const uint8_t* tag = NULL;
+        size_t tag_len = 0;
+        int rc;
+
+        if (pPaddingInfo) {
+            auth = (BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO*)pPaddingInfo;
+            nonce = auth->pbNonce;
+            nonce_len = auth->cbNonce;
+            aad = auth->pbAuthData;
+            aad_len = auth->cbAuthData;
+            tag = auth->pbTag;
+            tag_len = auth->cbTag;
+        }
+        (void)pbIV; (void)cbIV;
+
+        rc = w7b_provider_decrypt((w7b_key_handle*)hKey,
+                                   nonce, nonce_len,
+                                   aad, aad_len,
+                                   pbInput, cbInput,
+                                   tag, tag_len,
+                                   pbOutput);
+        if (rc != 0) return STATUS_AUTH_TAG_MISMATCH;
+        if (pcbResult) *pcbResult = cbInput;
+        return STATUS_SUCCESS;
+    }
+    return g_orig_BCryptDecrypt(hKey, pbInput, cbInput, pPaddingInfo,
+        pbIV, cbIV, pbOutput, cbOutput, pcbResult, flags);
 }
 
 /* ------------------------------------------------------------------ */
@@ -270,6 +489,30 @@ static int install_hooks(void)
             (NTSTATUS (WINAPI *)(void**, const wchar_t*,
                                  const wchar_t*, DWORD))
             GetProcAddress(hBcrypt, "BCryptOpenAlgorithmProvider");
+        g_orig_BCryptCloseAlgorithmProvider =
+            (NTSTATUS (WINAPI *)(void*, ULONG))
+            GetProcAddress(hBcrypt, "BCryptCloseAlgorithmProvider");
+        g_orig_BCryptGetProperty =
+            (NTSTATUS (WINAPI *)(void*, const wchar_t*,
+                                 PUCHAR, ULONG, ULONG*, ULONG))
+            GetProcAddress(hBcrypt, "BCryptGetProperty");
+        g_orig_BCryptGenerateSymmetricKey =
+            (NTSTATUS (WINAPI *)(void*, void**, PUCHAR, ULONG,
+                                 PUCHAR, ULONG, ULONG))
+            GetProcAddress(hBcrypt, "BCryptGenerateSymmetricKey");
+        g_orig_BCryptDestroyKey =
+            (NTSTATUS (WINAPI *)(void*))
+            GetProcAddress(hBcrypt, "BCryptDestroyKey");
+        g_orig_BCryptEncrypt =
+            (NTSTATUS (WINAPI *)(void*, PUCHAR, ULONG, void*,
+                                 PUCHAR, ULONG, PUCHAR, ULONG,
+                                 ULONG*, ULONG))
+            GetProcAddress(hBcrypt, "BCryptEncrypt");
+        g_orig_BCryptDecrypt =
+            (NTSTATUS (WINAPI *)(void*, PUCHAR, ULONG, void*,
+                                 PUCHAR, ULONG, PUCHAR, ULONG,
+                                 ULONG*, ULONG))
+            GetProcAddress(hBcrypt, "BCryptDecrypt");
     }
 
     /* 2) 初始化版本伪装（默认 Win10 22H2 = 10.0.19045） */
@@ -308,6 +551,48 @@ static int install_hooks(void)
         proc = GetProcAddress(hBcrypt, "BCryptOpenAlgorithmProvider");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptOpenAlgorithmProvider) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptCloseAlgorithmProvider && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptCloseAlgorithmProvider");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptCloseAlgorithmProvider) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptGetProperty && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptGetProperty");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptGetProperty) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptGenerateSymmetricKey && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptGenerateSymmetricKey");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptGenerateSymmetricKey) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptDestroyKey && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptDestroyKey");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptDestroyKey) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptEncrypt && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptEncrypt");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptEncrypt) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 16 && g_orig_BCryptDecrypt && hBcrypt) {
+        proc = GetProcAddress(hBcrypt, "BCryptDecrypt");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_BCryptDecrypt) == 0) {
             g_hook_count++;
         }
     }
