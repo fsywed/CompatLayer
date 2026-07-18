@@ -112,7 +112,7 @@ test: $(HOST_OBJ)
 
 build/test/obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(CC_HOST) -std=gnu11 -Wall -Wextra $(INCLUDES) -c $< -o $@
+	$(CC_HOST) -std=gnu11 -Wall -Wextra $(INCLUDES) -DWIN7BRIDGE_HOST_TEST -c $< -o $@
 
 clean:
 	@echo "[clean] removing build/ and Python bytecode caches"
