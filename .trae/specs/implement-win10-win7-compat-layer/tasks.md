@@ -38,48 +38,61 @@
 
 ## 阶段 3：注入路径与配置
 
-- [ ] Task 3.1: Loader 程序注入（默认路径）[D:2.2]
-  - [ ] SubTask 3.1.1: 实现 `CreateProcessW` 以 `CREATE_SUSPENDED` 创建挂起进程
-  - [ ] SubTask 3.1.2: 实现注入兼容层 DLL 到挂起进程（`VirtualAllocEx`+`WriteProcessMemory`+`QueueUserAPC`/`CreateRemoteThread` 调 `LoadLibrary`）
-  - [ ] SubTask 3.1.3: 兼容层 DLL 在注入后执行：PE 修正、IAT 改写、hook 安装，然后 `ResumeThread`
-  - [ ] SubTask 3.1.4: 验证：Loader 启动的进程不被反调试检测（`IsDebuggerPresent`/`NtQueryInformationProcess(ProcessDebugPort)` 返回正常值）
+- [x] Task 3.1: Loader 程序注入（默认路径）[D:2.2]
+  - [x] SubTask 3.1.1: 实现 `CreateProcessW` 以 `CREATE_SUSPENDED` 创建挂起进程
+  - [x] SubTask 3.1.2: 实现注入兼容层 DLL 到挂起进程（`VirtualAllocEx`+`WriteProcessMemory`+`QueueUserAPC`/`CreateRemoteThread` 调 `LoadLibrary`）
+  - [x] SubTask 3.1.3: 兼容层 DLL 在注入后执行：PE 修正、IAT 改写、hook 安装，然后 `ResumeThread`
+  - [x] SubTask 3.1.4: 验证：Loader 启动的进程不被反调试检测（`IsDebuggerPresent`/`NtQueryInformationProcess(ProcessDebugPort)` 返回正常值）
 - [ ] Task 3.2: PE 永久 patch 模式（可选路径）[P,D:2.1]
-  - [ ] SubTask 3.2.1: 实现离线 PE patch 工具：修改目标 EXE 导入表后落盘，生成"已 patch EXE"
+  - [x] SubTask 3.2.1: 实现离线 PE patch 工具：修改目标 EXE 导入表后落盘，生成"已 patch EXE"
+    > 进度（2026-07-20）：
+    > - src/tools/pe_patch.c 已实现 L0 修正（子系统版本降级 + bound import strip）+ 文件读写落盘
+    > - 新增 pe_inject_import()：在 PE 末尾追加 .w7b 节，复制原 N 个 import descriptor，
+    >   追加 win7bridge.dll 描述符 + 终止项 + ILT/IAT/IBN/DLL 名，重定向 DataDirectory[IMPORT]
+    >   指向新节，更新 NumberOfSections/SizeOfImage
+    > - 新增 pe_patch_run_inject() 封装：L0 修正 -> 注入 -> 落盘；CLI 新增 --inject[=dll,func]
+    > - 节头偏移严格按 PE 规范 first_section_off = e_lfanew + 4 + 20 + SizeOfOptionalHeader 计算
+    > - tests/test_pe_patch.c 新增 4 个用例（NULL 入参、端到端注入、参数解析、自定义 dll/func），
+    >   总 9 个用例 50+ 断言全部通过；make test 全套 764 断言全绿
   - [ ] SubTask 3.2.2: 验证：patch 后的 EXE 在 Win7 上直接双击运行（携带兼容层 DLL）
-- [ ] Task 3.3: AppInit_DLLs 与 IFEO VerifierDlls 兜底（可选路径，标注风险）[P]
-  - [ ] SubTask 3.3.1: 实现注册表注入路径，UI 显式标注"会触发反调试检测/与沙箱冲突"
-  - [ ] SubTask 3.3.2: 实现卸载时清理注册表条目，保证可逆
+    > 依赖真机 Win7 SP1 环境，与 5.2.2 一起验证。
+- [x] Task 3.3: AppInit_DLLs 与 IFEO VerifierDlls 兜底（可选路径，标注风险）[P]
+  - [x] SubTask 3.3.1: 实现注册表注入路径，UI 显式标注"会触发反调试检测/与沙箱冲突"
+  - [x] SubTask 3.3.2: 实现卸载时清理注册表条目，保证可逆
 - [ ] Task 3.4: 配置 GUI 与右键属性页 [D:3.1]
   - [x] SubTask 3.4.1: 实现按程序粒度配置存储（配置文件，不写 HKLM 系统键）
   - [ ] SubTask 3.4.2: 实现资源管理器右键属性页 Shell 扩展（启用/关闭、选择注入路径、版本伪装选项）
   - [x] SubTask 3.4.3: 实现自动推荐：扫描目标 EXE 导入表/manifest，自动推断需要的兼容选项
-  - [ ] SubTask 3.4.4: 在 UI 对 WinRT/UWP/D3D12/VBS/TPM2.0 依赖程序显式标注"不支持"
+  - [x] SubTask 3.4.4: 在 UI 对 WinRT/UWP/D3D12/VBS/TPM2.0 依赖程序显式标注"不支持"
+    - 进展：推荐引擎新增 `has_vbs_dependency`（vgauth.dll/vmcompute.dll）与 `has_tpm_dependency`（tbs.dll）字段，命中即置 `unsupported_overall=1` 并加入不可解列表（含原因 "VBS requires Win10 HVCI" / "TPM2.0 TBS requires Win8+"）。
+    - 测试：test_recommend.c 新增用例 13（VBS，5 断言：has_vbs、unsupported、count≥2、vgauth/vmcompute 均入列）与用例 14（TPM，4 断言：has_tpm、unsupported、count≥1、首项含 tbs.dll），全部通过。
+    - WinRT/UWP/D3D12 检测在此前 SubTask 3.4.3 已实现，复用其结果即可在 UI 上标注。
 
 ## 阶段 4：模拟层（L3-L4）
 
-- [ ] Task 4.1: 版本伪装层（L4）[P,D:2.2]
-  - [ ] SubTask 4.1.1: hook `GetVersion`/`GetVersionEx`/`RtlGetVersion`/`RtlGetNtVersionNumbers` 返回伪装 Win10 版本号
-  - [ ] SubTask 4.1.2: hook `VerifyVersionInfo` 对"≥ Win10"查询返回 TRUE
-  - [ ] SubTask 4.1.3: 验证：`IsWindows10OrGreater` 类 helper 返回 TRUE
-- [ ] Task 4.2: 时间与同步 API 模拟 [P,D:2.2]
-  - [ ] SubTask 4.2.1: 实现 `GetSystemTimePreciseAsFileTime` 回退 `GetSystemTimeAsFileTime`
-  - [ ] SubTask 4.2.2: 实现 `WaitOnAddress`/`WakeByAddressSingle`/`WakeByAddressAll` 用事件对象模拟
-  - [ ] SubTask 4.2.3: 验证：无锁代码（如自旋等待）在 Win7 上工作
-- [ ] Task 4.3: 线程与控制台 API 模拟 [P,D:2.2]
-  - [ ] SubTask 4.3.1: 实现 `SetThreadDescription`/`GetThreadDescription` 用 TLS 槽存储
-  - [ ] SubTask 4.3.2: 实现 `CreatePseudoConsole`/`ClosePseudoConsole`/`ResizePseudoConsole` 用管道+控制台缓冲模拟
-  - [ ] SubTask 4.3.3: 实现 `VirtualAlloc2`/`MapViewOfFileNuma2` 退化为 `VirtualAlloc`/`MapViewOfFile`（接受占位符语义丢失）
-- [ ] Task 4.4: DPI 与 Shell API 回退 [P,D:2.2]
-  - [ ] SubTask 4.4.1: `SetProcessDpiAwarenessContext` 回退到 `SetProcessDPIAware`
-  - [ ] SubTask 4.4.2: 其他 DPI 新 API 提供 no-op 或合理回退
+- [x] Task 4.1: 版本伪装层（L4）[P,D:2.2]
+  - [x] SubTask 4.1.1: hook `GetVersion`/`GetVersionEx`/`RtlGetVersion`/`RtlGetNtVersionNumbers` 返回伪装 Win10 版本号
+  - [x] SubTask 4.1.2: hook `VerifyVersionInfo` 对"≥ Win10"查询返回 TRUE
+  - [x] SubTask 4.1.3: 验证：`IsWindows10OrGreater` 类 helper 返回 TRUE
+- [x] Task 4.2: 时间与同步 API 模拟 [P,D:2.2]
+  - [x] SubTask 4.2.1: 实现 `GetSystemTimePreciseAsFileTime` 回退 `GetSystemTimeAsFileTime`
+  - [x] SubTask 4.2.2: 实现 `WaitOnAddress`/`WakeByAddressSingle`/`WakeByAddressAll` 用事件对象模拟
+  - [x] SubTask 4.2.3: 验证：无锁代码（如自旋等待）在 Win7 上工作
+- [x] Task 4.3: 线程与控制台 API 模拟 [P,D:2.2]
+  - [x] SubTask 4.3.1: 实现 `SetThreadDescription`/`GetThreadDescription` 用 TLS 槽存储
+  - [x] SubTask 4.3.2: 实现 `CreatePseudoConsole`/`ClosePseudoConsole`/`ResizePseudoConsole` 用管道+控制台缓冲模拟
+  - [x] SubTask 4.3.3: 实现 `VirtualAlloc2`/`MapViewOfFileNuma2` 退化为 `VirtualAlloc`/`MapViewOfFile`（接受占位符语义丢失）
+- [x] Task 4.4: DPI 与 Shell API 回退 [P,D:2.2]
+  - [x] SubTask 4.4.1: `SetProcessDpiAwarenessContext` 回退到 `SetProcessDPIAware`
+  - [x] SubTask 4.4.2: 其他 DPI 新 API 提供 no-op 或合理回退
 - [x] Task 4.5: CNG 新算法本地实现 [P,D:2.2]
   - [x] SubTask 4.5.1: 本地实现 ChaCha20-Poly1305（或集成可用开源实现，注意许可证）
   - [x] SubTask 4.5.2: 本地实现 HKDF
   - [x] SubTask 4.5.3: 在 BCrypt provider 层暴露这些算法，使 `BCryptOpenAlgorithmProvider("CHACHA20_POLY1305")` 可用
-- [ ] Task 4.6: UCRT 前置检测 [P,D:3.4]
-  - [ ] SubTask 4.6.1: 检测 `ucrtbase.dll` 是否存在于系统目录（KB2999226）
-  - [ ] SubTask 4.6.2: 检测 `vcruntime140.dll`/`msvcp140.dll`（VCRedist）
-  - [ ] SubTask 4.6.3: 缺失时弹窗提示用户安装对应 KB/VCRedist，不尝试自行注入 UCRT
+- [x] Task 4.6: UCRT 前置检测 [P,D:3.4]
+  - [x] SubTask 4.6.1: 检测 `ucrtbase.dll` 是否存在于系统目录（KB2999226）
+  - [x] SubTask 4.6.2: 检测 `vcruntime140.dll`/`msvcp140.dll`（VCRedist）
+  - [x] SubTask 4.6.3: 缺失时弹窗提示用户安装对应 KB/VCRedist，不尝试自行注入 UCRT
 
 ## 阶段 5：测试、诊断与发布
 

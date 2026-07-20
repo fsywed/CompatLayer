@@ -31,6 +31,19 @@ HRESULT sim_SetProcessDpiAwareness(int value);
 /* 返回窗口 DPI；host 下返回系统 DPI 96。                              */
 UINT sim_GetDpiForWindow(void* hwnd);
 
+/* 返回系统 DPI；host 下返回 96。SubTask 4.4.2 回退实现。              */
+UINT sim_GetDpiForSystem(void);
+
+/* 返回显示器 DPI；host 下返回 96。monitor 句柄在回退路径下忽略。      */
+HRESULT sim_GetDpiForMonitor(void* hmonitor, int dpi_type,
+                              UINT* dpi_x, UINT* dpi_y);
+
+/* 按 DPI 取系统度量；host 下退化 GetSystemMetrics，丢失 DPI 维度。    */
+int sim_GetSystemMetricsForDpi(int index, UINT dpi);
+
+/* 启用非客户区 DPI 缩放；host 下 no-op 返回 TRUE。                     */
+BOOL sim_EnableNonClientDpiScaling(void* hwnd);
+
 #ifdef __cplusplus
 }
 #endif

@@ -53,6 +53,8 @@ typedef struct {
     int  has_ucrt_dependency;          /* UCRT（api-ms-win-crt-* / ucrtbase.dll）*/
     int  has_winrt_dependency;         /* WinRT（api-ms-win-core-winrt-* 等）    */
     int  has_d3d12_dependency;         /* D3D12（d3d12.dll）                     */
+    int  has_vbs_dependency;           /* VBS（vgauth.dll / vmcompute.dll）      */
+    int  has_tpm_dependency;           /* TPM2.0（tbs.dll）                      */
 
     /* 可模拟 API 命中列表（函数名） */
     char emulated_apis[W7B_REC_EMULATED_MAX][W7B_REC_EMULATED_NAME];

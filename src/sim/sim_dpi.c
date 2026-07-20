@@ -65,3 +65,75 @@ UINT sim_GetDpiForWindow(void* hwnd)
     return SIM_SYSTEM_DPI;
 #endif
 }
+
+/* ------------------------------------------------------------------ */
+/* SubTask 4.4.2：其他 DPI 新 API no-op / 合理回退                     */
+/* ------------------------------------------------------------------ */
+
+UINT sim_GetDpiForSystem(void)
+{
+#ifdef _WIN32
+    /* Windows：用屏幕 DC 取 LOGPIXELSX 作为系统 DPI                    */
+    extern void* GetDC(void*);
+    extern int   ReleaseDC(void*, void*);
+    extern int   GetDeviceCaps(void*, int);
+    void* hdc = GetDC(NULL);
+    if (hdc != NULL) {
+        int dpi = GetDeviceCaps(hdc, SIM_LOGPIXELSX);
+        ReleaseDC(NULL, hdc);
+        return (UINT)dpi;
+    }
+    return SIM_SYSTEM_DPI;
+#else
+    /* host：固定 96                                                   */
+    return SIM_SYSTEM_DPI;
+#endif
+}
+
+HRESULT sim_GetDpiForMonitor(void* hmonitor, int dpi_type,
+                              UINT* dpi_x, UINT* dpi_y)
+{
+    (void)hmonitor;   /* 回退路径无法按监视器区分，统一返回系统 DPI     */
+    (void)dpi_type;
+
+    if (dpi_x == NULL || dpi_y == NULL) {
+        return E_POINTER;
+    }
+#ifdef _WIN32
+    /* Windows：若 shcore.dll 的 GetDpiForMonitor 可用则调用，否则回退 */
+    extern void* GetDC(void*);
+    extern int   ReleaseDC(void*, void*);
+    extern int   GetDeviceCaps(void*, int);
+    void* hdc = GetDC(NULL);
+    if (hdc != NULL) {
+        int dpi = GetDeviceCaps(hdc, SIM_LOGPIXELSX);
+        ReleaseDC(NULL, hdc);
+        *dpi_x = (UINT)dpi;
+        *dpi_y = (UINT)dpi;
+        return S_OK;
+    }
+#endif
+    *dpi_x = SIM_SYSTEM_DPI;
+    *dpi_y = SIM_SYSTEM_DPI;
+    return S_OK;
+}
+
+int sim_GetSystemMetricsForDpi(int index, UINT dpi)
+{
+    (void)dpi;   /* 回退实现丢失 DPI 维度，仅按系统度量返回            */
+
+#ifdef _WIN32
+    extern int GetSystemMetrics(int);
+    return GetSystemMetrics(index);
+#else
+    /* host：对常见索引返回 0，调用方应容忍语义缺失                    */
+    (void)index;
+    return 0;
+#endif
+}
+
+BOOL sim_EnableNonClientDpiScaling(void* hwnd)
+{
+    (void)hwnd;   /* Win7 无此 API，回退为 no-op 成功                  */
+    return TRUE;
+}

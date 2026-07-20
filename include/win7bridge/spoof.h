@@ -112,6 +112,38 @@ int spoof_get_version(WORD* major, WORD* minor, DWORD* build);
 int spoof_get_version_ex_w(void* osvi);
 
 /*
+ * spoof_get_version - 模拟 GetVersion（已废弃 API）
+ *   返回值布局（与 Windows SDK 一致）：
+ *     - 低 16 位 = major
+ *     - 接下来 8 位 = minor
+ *     - 高 16 位 = build（Win7 上 build 被 GetVersion 截断为 0，
+ *       但 Win8+ 起 manifest 加 supportedOS 后会返回真实 build；
+ *       伪装为 Win10 时返回 build 19045）
+ *   内部用 g_cfg 计算，host 测试可调用。
+ */
+DWORD spoof_get_version_legacy(void);
+
+/*
+ * spoof_rtl_get_version - 模拟 RtlGetVersion（ntdll）
+ *   osvi 指向调用方分配的 OSVERSIONINFOEXW，填充伪装 Win10 版本。
+ *   与 spoof_get_version_ex_w 的区别：RtlGetVersion 不检查
+ *   dwOSVersionInfoSize 字段，且总是返回 STATUS_SUCCESS（0）。
+ * 返回：0（STATUS_SUCCESS）；osvi 为空时仍返回 0 但不填充。
+ */
+int spoof_rtl_get_version(void* osvi);
+
+/*
+ * spoof_rtl_get_nt_version_numbers - 模拟 RtlGetNtVersionNumbers
+ *   三个出参指针均可为 NULL（跳过）。
+ *   pMajor/pMinor 填充主/次版本号；pBuild 填充构建号。
+ *   注意：真实 RtlGetNtVersionNumbers 返回的 build 高位会设置
+ *   0xF0000000 标志位（表示 nibble 15 是 build）；伪装时也模拟
+ *   这个行为，便于反检测一致性。
+ */
+void spoof_rtl_get_nt_version_numbers(DWORD* pMajor, DWORD* pMinor,
+                                       DWORD* pBuild);
+
+/*
  * spoof_verify_version_info - 模拟 VerifyVersionInfoW
  *   osvi        ：调用方构造的请求条件（OSVERSIONINFOEXW）
  *   typeMask    ：VER_* 维度掩码，指示要校验哪些字段

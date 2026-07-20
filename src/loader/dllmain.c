@@ -145,12 +145,19 @@ typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
 /* win7bridge 各模块函数原型（手动声明，避免 typedef 冲突）            */
 /* ------------------------------------------------------------------ */
 
+/* pe_apply 模块（SubTask 3.1.3）：对当前 EXE 应用 L0/L1/L2 修正 */
+extern int win7bridge_apply_pe_and_iat_fixes(void);
+
 /* spoof 模块：SpoofConfig 仅以前向声明形式引入，spoof_init 只传 NULL */
 struct _SpoofConfig;
 extern int spoof_init(struct _SpoofConfig* cfg);
 extern int spoof_get_version_ex_w(void* osvi);
 extern int spoof_verify_version_info(const void* osvi, DWORD typeMask,
                                      DWORDLONG conditionMask);
+extern DWORD spoof_get_version_legacy(void);
+extern int  spoof_rtl_get_version(void* osvi);
+extern void spoof_rtl_get_nt_version_numbers(DWORD* pMajor, DWORD* pMinor,
+                                              DWORD* pBuild);
 
 /* sim_thread 模块：HRESULT 在 windows.h 中等价于 LONG */
 extern LONG sim_SetThreadDescription(HANDLE thread, const wchar_t* desc);
@@ -170,11 +177,16 @@ extern int sim_WakeByAddressAll(void* addr);
 /* sim_dpi 模块 */
 extern BOOL sim_SetProcessDpiAwarenessContext(int value);
 extern UINT sim_GetDpiForWindow(void* hwnd);
+extern UINT sim_GetDpiForSystem(void);
+extern LONG sim_GetDpiForMonitor(void* hmonitor, int dpi_type,
+                                  UINT* dpi_x, UINT* dpi_y);
+extern int  sim_GetSystemMetricsForDpi(int index, UINT dpi);
+extern BOOL sim_EnableNonClientDpiScaling(void* hwnd);
 
 /* ------------------------------------------------------------------ */
 /* 全局 hook 句柄数组与原始函数指针                                    */
 /* ------------------------------------------------------------------ */
-static InlineHook g_hooks[16];
+static InlineHook g_hooks[24];
 static int        g_hook_count = 0;
 
 static FARPROC    (WINAPI *g_orig_GetProcAddress)(HMODULE, LPCSTR);
@@ -182,6 +194,10 @@ static BOOL       (WINAPI *g_orig_GetVersionExW)(OSVERSIONINFOW*);
 static BOOL       (WINAPI *g_orig_VerifyVersionInfoW)(OSVERSIONINFOEXW*,
                                                       DWORD, DWORDLONG);
 static HMODULE    (WINAPI *g_orig_LoadLibraryA)(LPCSTR);
+/* SubTask 4.1.1：补全 GetVersion / RtlGetVersion / RtlGetNtVersionNumbers */
+static DWORD      (WINAPI *g_orig_GetVersion)(void);
+static LONG       (WINAPI *g_orig_RtlGetVersion)(void* osvi);
+static void       (WINAPI *g_orig_RtlGetNtVersionNumbers)(DWORD*, DWORD*, DWORD*);
 static NTSTATUS   (WINAPI *g_orig_BCryptOpenAlgorithmProvider)(
     void**, const wchar_t*, const wchar_t*, DWORD);
 static NTSTATUS   (WINAPI *g_orig_BCryptCloseAlgorithmProvider)(void*, ULONG);
@@ -235,6 +251,14 @@ static FARPROC WINAPI hook_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
             return (FARPROC)sim_SetProcessDpiAwarenessContext;
         if (strcmp(name, "GetDpiForWindow") == 0)
             return (FARPROC)sim_GetDpiForWindow;
+        if (strcmp(name, "GetDpiForSystem") == 0)
+            return (FARPROC)sim_GetDpiForSystem;
+        if (strcmp(name, "GetDpiForMonitor") == 0)
+            return (FARPROC)sim_GetDpiForMonitor;
+        if (strcmp(name, "GetSystemMetricsForDpi") == 0)
+            return (FARPROC)sim_GetSystemMetricsForDpi;
+        if (strcmp(name, "EnableNonClientDpiScaling") == 0)
+            return (FARPROC)sim_EnableNonClientDpiScaling;
     }
     /* 其余委托原始 GetProcAddress */
     return g_orig_GetProcAddress(hModule, lpProcName);
@@ -262,6 +286,36 @@ static BOOL WINAPI hook_VerifyVersionInfoW(OSVERSIONINFOEXW* info,
 {
     return spoof_verify_version_info(info, typeMask, conditionMask)
            ? TRUE : FALSE;
+}
+
+/*
+ * hook_GetVersion - 伪装 Win10 (SubTask 4.1.1)
+ *   返回 (minor << 16) | major；高 8 位为 0（与 Win7 GetVersion 一致）。
+ *   如果 spoof 未启用，回退到原始 GetVersion。
+ */
+static DWORD WINAPI hook_GetVersion(void)
+{
+    /* 总是返回伪装版本：避免某些程序直接调 GetVersion 拿到 Win7 6.1 */
+    return spoof_get_version_legacy();
+}
+
+/*
+ * hook_RtlGetVersion - 伪装 Win10 (SubTask 4.1.1)
+ *   直接委托 spoof_rtl_get_version，总是返回 STATUS_SUCCESS。
+ */
+static LONG WINAPI hook_RtlGetVersion(void* osvi)
+{
+    return (LONG)spoof_rtl_get_version(osvi);
+}
+
+/*
+ * hook_RtlGetNtVersionNumbers - 伪装 Win10 (SubTask 4.1.1)
+ *   build 高 4 位置 0xF0000000，与真实 ntdll 行为一致。
+ */
+static void WINAPI hook_RtlGetNtVersionNumbers(DWORD* pMajor, DWORD* pMinor,
+                                                DWORD* pBuild)
+{
+    spoof_rtl_get_nt_version_numbers(pMajor, pMinor, pBuild);
 }
 
 /*
@@ -484,6 +538,21 @@ static int install_hooks(void)
     g_orig_LoadLibraryA =
         (HMODULE (WINAPI *)(LPCSTR))
         GetProcAddress(hKernel32, "LoadLibraryA");
+    /* SubTask 4.1.1：取 GetVersion / RtlGetVersion / RtlGetNtVersionNumbers */
+    g_orig_GetVersion =
+        (DWORD (WINAPI *)(void))
+        GetProcAddress(hKernel32, "GetVersion");
+    {
+        HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+        if (hNtdll) {
+            g_orig_RtlGetVersion =
+                (LONG (WINAPI *)(void*))
+                GetProcAddress(hNtdll, "RtlGetVersion");
+            g_orig_RtlGetNtVersionNumbers =
+                (void (WINAPI *)(DWORD*, DWORD*, DWORD*))
+                GetProcAddress(hNtdll, "RtlGetNtVersionNumbers");
+        }
+    }
     if (hBcrypt) {
         g_orig_BCryptOpenAlgorithmProvider =
             (NTSTATUS (WINAPI *)(void**, const wchar_t*,
@@ -519,77 +588,102 @@ static int install_hooks(void)
     spoof_init(NULL);
 
     /* 3) 安装 hook（顺序填充 g_hooks[16]） */
-    if (g_hook_count < 16 && g_orig_GetProcAddress) {
+    if (g_hook_count < 24 && g_orig_GetProcAddress) {
         proc = GetProcAddress(hKernel32, "GetProcAddress");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_GetProcAddress) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_GetVersionExW) {
+    if (g_hook_count < 24 && g_orig_GetVersionExW) {
         proc = GetProcAddress(hKernel32, "GetVersionExW");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_GetVersionExW) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_VerifyVersionInfoW) {
+    if (g_hook_count < 24 && g_orig_VerifyVersionInfoW) {
         proc = GetProcAddress(hKernel32, "VerifyVersionInfoW");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_VerifyVersionInfoW) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_LoadLibraryA) {
+    if (g_hook_count < 24 && g_orig_LoadLibraryA) {
         proc = GetProcAddress(hKernel32, "LoadLibraryA");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_LoadLibraryA) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptOpenAlgorithmProvider && hBcrypt) {
+    /* SubTask 4.1.1：GetVersion hook（kernel32） */
+    if (g_hook_count < 24 && g_orig_GetVersion) {
+        proc = GetProcAddress(hKernel32, "GetVersion");
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_GetVersion) == 0) {
+            g_hook_count++;
+        }
+    }
+    /* SubTask 4.1.1：RtlGetVersion / RtlGetNtVersionNumbers hook（ntdll） */
+    if (g_hook_count < 24 && g_orig_RtlGetVersion) {
+        HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+        proc = hNtdll ? GetProcAddress(hNtdll, "RtlGetVersion") : NULL;
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_RtlGetVersion) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 24 && g_orig_RtlGetNtVersionNumbers) {
+        HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+        proc = hNtdll ? GetProcAddress(hNtdll, "RtlGetNtVersionNumbers") : NULL;
+        if (proc && inline_hook_install(&g_hooks[g_hook_count],
+                                        proc, hook_RtlGetNtVersionNumbers) == 0) {
+            g_hook_count++;
+        }
+    }
+    if (g_hook_count < 24 && g_orig_BCryptOpenAlgorithmProvider && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptOpenAlgorithmProvider");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptOpenAlgorithmProvider) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptCloseAlgorithmProvider && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptCloseAlgorithmProvider && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptCloseAlgorithmProvider");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptCloseAlgorithmProvider) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptGetProperty && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptGetProperty && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptGetProperty");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptGetProperty) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptGenerateSymmetricKey && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptGenerateSymmetricKey && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptGenerateSymmetricKey");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptGenerateSymmetricKey) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptDestroyKey && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptDestroyKey && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptDestroyKey");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptDestroyKey) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptEncrypt && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptEncrypt && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptEncrypt");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptEncrypt) == 0) {
             g_hook_count++;
         }
     }
-    if (g_hook_count < 16 && g_orig_BCryptDecrypt && hBcrypt) {
+    if (g_hook_count < 24 && g_orig_BCryptDecrypt && hBcrypt) {
         proc = GetProcAddress(hBcrypt, "BCryptDecrypt");
         if (proc && inline_hook_install(&g_hooks[g_hook_count],
                                         proc, hook_BCryptDecrypt) == 0) {
@@ -611,6 +705,11 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD reason, LPVOID reserved)
     switch (reason) {
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hInst);
+        /* SubTask 3.1.3：先对当前 EXE 应用 L0 PE 修正 + L1/L2 IAT 改写，
+         * 再安装 inline hook。两步顺序重要：PE 修正必须在 hook 之前，
+         * 因为 hook 假设 IAT 已被改写、api-ms-* 虚拟名已重定向到
+         * win7bridge_local 或真实 DLL。 */
+        win7bridge_apply_pe_and_iat_fixes();
         install_hooks();
         break;
     case DLL_PROCESS_DETACH:

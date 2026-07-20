@@ -308,6 +308,23 @@ static void rec_classify_dll(const char* dll_name,
         return;
     }
 
+    /* VBS 依赖（虚拟化安全）：vgauth.dll / vmcompute.dll            */
+    if (rec_ieq(dll_name, "vgauth.dll") ||
+        rec_ieq(dll_name, "vmcompute.dll")) {
+        rec->has_vbs_dependency = 1;
+        rec->unsupported_overall = 1;
+        rec_add_unresolvable(rec, dll_name, "VBS requires Win10 HVCI");
+        return;
+    }
+
+    /* TPM2.0 依赖：tbs.dll（TPM Base Services）                     */
+    if (rec_ieq(dll_name, "tbs.dll")) {
+        rec->has_tpm_dependency = 1;
+        rec->unsupported_overall = 1;
+        rec_add_unresolvable(rec, dll_name, "TPM2.0 TBS requires Win8+");
+        return;
+    }
+
     /* 其他虚拟名（api-ms-* / ext-ms-*）：未知扩展，标注不可解 */
     if (apiset_is_virtual_name(dll_name)) {
         /* 与已知 WinRT/D3D12/UCRT 已分类的之外，标为未知虚拟名 */

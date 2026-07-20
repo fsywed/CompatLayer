@@ -316,6 +316,59 @@ static void test_d3d12_dependency(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* 用例 13：VBS 依赖（vgauth.dll / vmcompute.dll）                     */
+/* ------------------------------------------------------------------ */
+static void test_vbs_dependency(void)
+{
+    unsigned char buf[IMG_SIZE];
+    PeInfo pe;
+    W7bRecommendResult rec;
+    const char* dlls[]  = { "vgauth.dll", "vmcompute.dll" };
+    const char* funcs[] = { "VgAuthInitialize", "VmComputeCall" };
+
+    printf("==== 用例 13：VBS 依赖 ====\n");
+
+    build_pe_with_imports(buf, IMG_SIZE, dlls, funcs, 2, 6, 1);
+    CHECK(pe_parse(buf, IMG_SIZE, &pe) == PE_OK, "pe_parse 成功");
+
+    w7b_recommend_from_pe(&pe, NULL, &rec);
+    CHECK(rec.has_vbs_dependency == 1, "has_vbs_dependency == 1");
+    CHECK(rec.unsupported_overall == 1, "VBS -> unsupported_overall == 1");
+    CHECK(rec.unresolvable_count >= 2, "两个 VBS DLL 都进入不可解列表");
+    /* 去重：两个不同 DLL 名应分别入列 */
+    CHECK(strstr(rec.unresolvable[0], "vgauth.dll") != NULL ||
+          strstr(rec.unresolvable[1], "vgauth.dll") != NULL,
+          "vgauth.dll 在不可解列表");
+    CHECK(strstr(rec.unresolvable[0], "vmcompute.dll") != NULL ||
+          strstr(rec.unresolvable[1], "vmcompute.dll") != NULL,
+          "vmcompute.dll 在不可解列表");
+}
+
+/* ------------------------------------------------------------------ */
+/* 用例 14：TPM2.0 依赖（tbs.dll）                                     */
+/* ------------------------------------------------------------------ */
+static void test_tpm_dependency(void)
+{
+    unsigned char buf[IMG_SIZE];
+    PeInfo pe;
+    W7bRecommendResult rec;
+    const char* dlls[]  = { "tbs.dll" };
+    const char* funcs[] = { "Tbsi_Context_Create" };
+
+    printf("==== 用例 14：TPM2.0 依赖 ====\n");
+
+    build_pe_with_imports(buf, IMG_SIZE, dlls, funcs, 1, 6, 1);
+    CHECK(pe_parse(buf, IMG_SIZE, &pe) == PE_OK, "pe_parse 成功");
+
+    w7b_recommend_from_pe(&pe, NULL, &rec);
+    CHECK(rec.has_tpm_dependency == 1, "has_tpm_dependency == 1");
+    CHECK(rec.unsupported_overall == 1, "TPM -> unsupported_overall == 1");
+    CHECK(rec.unresolvable_count >= 1, "tbs.dll 进入不可解列表");
+    CHECK(strstr(rec.unresolvable[0], "tbs.dll") != NULL,
+          "不可解列表首项含 tbs.dll");
+}
+
+/* ------------------------------------------------------------------ */
 /* 用例 6：可模拟 API 命中                                              */
 /* ------------------------------------------------------------------ */
 static void test_emulated_api(void)
@@ -555,6 +608,8 @@ int main(void)
     test_ucrt_dependency();
     test_winrt_dependency();
     test_d3d12_dependency();
+    test_vbs_dependency();
+    test_tpm_dependency();
     test_emulated_api();
     test_manifest_win7_guid();
     test_manifest_win10_only_guid();
