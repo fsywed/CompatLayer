@@ -1,14 +1,14 @@
 @echo off
 REM ============================================================
-REM build_all.bat - 编译所有 Win7 验证用例
+REM build_all.bat - Compile all Win7 verification cases
 REM
-REM 输出：bin\*.exe（含 win7bridge.dll, win7bridge_loader.exe, pe_patch.exe）
+REM Output: bin\*.exe (incl. win7bridge.dll, win7bridge_loader.exe, pe_patch.exe)
 REM
-REM 修复记录：
-REM   - 排除有 main() 的源文件（loader.c, pe_patch.c, pe_patch_cli.c）
-REM     避免编译进 win7bridge.dll 时 multiple definition of `main'
-REM   - 排除 shellext_dll.c（含 DllMain，应单独编译为 shellext.dll）
-REM   - 链接库补 -luser32 -lgdi32 -lshlwapi（DPI / Shell API 依赖）
+REM Notes:
+REM   - All comments in English to avoid GBK/UTF-8 codec issues in Win7 CMD
+REM   - Skip sources with main() to avoid multiple-definition link error
+REM   - Skip shellext_dll.c (has DllMain, should be built as separate DLL)
+REM   - Add -luser32 -lgdi32 -lshlwapi for DPI / Shell API deps
 REM ============================================================
 setlocal enabledelayedexpansion
 
@@ -19,7 +19,7 @@ set SRC=%ROOT%..\..\src
 
 if not exist "%BIN%" mkdir "%BIN%"
 
-REM 检测 gcc 是否可用
+REM Check gcc availability
 where gcc >nul 2>&1
 if errorlevel 1 (
     echo [FAIL] gcc not found in PATH
@@ -30,13 +30,12 @@ set GCC=gcc
 set CFLAGS=-Wall -Wextra -O2 -std=gnu11 -I%INC% -I%ROOT%
 
 REM ============================================================
-REM 1. 编译 win7bridge.dll（兼容层）
-REM    排除含 main() / DllMain() 的源文件
+REM 1. Build win7bridge.dll (compatibility layer)
+REM    Skip sources containing main() or DllMain()
 REM ============================================================
 echo [build] win7bridge.dll
 set DLL_OBJS=
 for /R "%SRC%" %%F in (*.c) do (
-    REM 跳过含 main 的 loader / pe_patch 主程序
     set SKIP=0
     if /I "%%~nF"=="loader"        set SKIP=1
     if /I "%%~nF"=="pe_patch"      set SKIP=1
@@ -67,7 +66,7 @@ if errorlevel 1 (
 del build_dll_link.txt 2>nul
 
 REM ============================================================
-REM 2. 编译 win7bridge_loader.exe
+REM 2. Build win7bridge_loader.exe
 REM ============================================================
 echo [build] win7bridge_loader.exe
 %GCC% %CFLAGS% -D_WIN32 ^
@@ -82,9 +81,9 @@ if errorlevel 1 (
 del build_loader_err.txt 2>nul
 
 REM ============================================================
-REM 3. 编译 pe_patch.exe
-REM    pe_patch_cli.c 是独立 CLI 包装器，自带 main()，
-REM    仅依赖 pe.c（PE 解析），不依赖 pe_patch.c（含另一个 main）
+REM 3. Build pe_patch.exe
+REM    pe_patch_cli.c has its own main(), depends only on pe.c
+REM    Do NOT link pe_patch.c (would cause duplicate main)
 REM ============================================================
 echo [build] pe_patch.exe
 %GCC% %CFLAGS% -D_WIN32 ^
@@ -99,7 +98,7 @@ if errorlevel 1 (
 del build_patch_err.txt 2>nul
 
 REM ============================================================
-REM 4. 编译所有测试 EXE
+REM 4. Build all test EXEs
 REM ============================================================
 set BUILD_FAIL=0
 

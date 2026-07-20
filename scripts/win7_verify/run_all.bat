@@ -1,9 +1,11 @@
 @echo off
 REM ============================================================
-REM run_all.bat - Win7 真机验证总入口
+REM run_all.bat - Win7 verification main entry
 REM
-REM 唯一日志：results\win7_verify.log（覆盖写）
-REM 用法：cd scripts\win7_verify && run_all.bat
+REM Single log: results\win7_verify.log (overwritten)
+REM Usage: cd scripts\win7_verify && run_all.bat
+REM
+REM Notes: English-only comments to avoid GBK/UTF-8 codec issues
 REM ============================================================
 setlocal enabledelayedexpansion
 
@@ -14,14 +16,14 @@ set LOG=%RES%\win7_verify.log
 
 if not exist "%RES%" mkdir "%RES%"
 
-REM 若未编译，先 build
+REM If bin is missing, run build_all.bat first
 if not exist "%BIN%\win7bridge_loader.exe" (
-    echo [info] bin 缺失，先跑 build_all.bat > "%LOG%"
+    echo [info] bin missing, running build_all.bat first > "%LOG%"
     call "%ROOT%build_all.bat" >> "%LOG%" 2>&1
 )
 
 echo ============================================================ > "%LOG%"
-echo Win7Bridge 真机验证 >> "%LOG%"
+echo Win7Bridge Win7 Verification >> "%LOG%"
 echo date: %date% %time% >> "%LOG%"
 echo ============================================================ >> "%LOG%"
 
@@ -29,9 +31,9 @@ set PASS_COUNT=0
 set FAIL_COUNT=0
 
 REM ============================================================
-REM 用例执行子程序
-REM   %1 = 用例名（无扩展名）
-REM   %2 = 模式：direct | patched_subsystem | loader
+REM Subroutine: run one test case
+REM   %1 = case name (no extension)
+REM   %2 = mode: direct | patched_subsystem | loader
 REM ============================================================
 goto :main
 
@@ -43,13 +45,15 @@ echo. >> "%LOG%"
 echo ---- %CNAME% (mode=%MODE%) ---- >> "%LOG%"
 
 if not exist "%EXE%" (
-    echo [SKIP] %EXE% 不存在 >> "%LOG%"
+    echo [SKIP] %EXE% not found >> "%LOG%"
     set /A FAIL_COUNT+=1
     goto :eof
 )
 
 if "%MODE%"=="patched_subsystem" (
-    REM 先 pe_patch 把子系统版本设为 10.0（坏 EXE），再 patch 回 6.1（好 EXE）
+    REM Step 1: pe_patch set subsystem to 10.0 (bad EXE)
+    REM Step 2: pe_patch fix subsystem back to 6.1 (good EXE)
+    REM Step 3: win7bridge_loader launches the fixed EXE
     "%BIN%\pe_patch.exe" "%EXE%" "%EXE%.bad" --set-subsystem 10.0 >> "%LOG%" 2>&1
     if exist "%EXE%.bad" (
         "%BIN%\pe_patch.exe" "%EXE%.bad" "%EXE%.fixed" --fix-subsystem >> "%LOG%" 2>&1
@@ -57,11 +61,11 @@ if "%MODE%"=="patched_subsystem" (
             "%BIN%\win7bridge_loader.exe" --dll "%BIN%\win7bridge.dll" "%EXE%.fixed" >> "%LOG%" 2>&1
             set ERRLVL=!errorlevel!
         ) else (
-            echo [FAIL] %EXE%.fixed 未生成 >> "%LOG%"
+            echo [FAIL] %EXE%.fixed not generated >> "%LOG%"
             set ERRLVL=999
         )
     ) else (
-        echo [FAIL] %EXE%.bad 未生成 >> "%LOG%"
+        echo [FAIL] %EXE%.bad not generated >> "%LOG%"
         set ERRLVL=998
     )
     goto :case_done
@@ -73,7 +77,7 @@ if "%MODE%"=="loader" (
     goto :case_done
 )
 
-REM direct 模式：直接运行
+REM direct mode: run EXE directly
 "%EXE%" >> "%LOG%" 2>&1
 set ERRLVL=!errorlevel!
 
