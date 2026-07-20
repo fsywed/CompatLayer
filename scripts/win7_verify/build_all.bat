@@ -27,7 +27,8 @@ if errorlevel 1 (
 )
 
 set GCC=gcc
-set CFLAGS=-Wall -Wextra -O2 -std=gnu11 -I%INC% -I%ROOT%
+REM _WIN32_WINNT=0x0601 enables Vista+/Win7 APIs (SetProcessDPIAware, etc.)
+set CFLAGS=-Wall -Wextra -O2 -std=gnu11 -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -I%INC% -I%ROOT%
 
 REM ============================================================
 REM 1. Build win7bridge.dll (compatibility layer)

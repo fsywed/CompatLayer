@@ -1,9 +1,6 @@
 [build] win7bridge.dll
   [FAIL] E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c:93:13: warning: 'DisableThreadLibraryCalls' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
- BOOL WINAPI DisableThreadLibraryCalls(HMODULE);
-             ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c:113:16: error: redefinition of 'struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO'
+E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c:114:16: error: redefinition of 'struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO'
  typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
                 ^
 In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincrypt.h:12:0,
@@ -12,7 +9,7 @@ In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinG
 E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/bcrypt.h:172:18: note: originally defined here
    typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
                   ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c:127:3: error: conflicting types for 'BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO'
+E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\loader\dllmain.c:128:3: error: conflicting types for 'BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO'
  } BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO;
    ^
 In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincrypt.h:12:0,
@@ -21,203 +18,10 @@ In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinG
 E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/bcrypt.h:186:5: note: previous declaration of 'BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO' was here
    } BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO,*PBCRYPT_AUTHENTICATED_CIPHER_MODE_INFO;
      ^
-  [FAIL] E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:48:18: error: conflicting types for 'HRESULT'
- typedef int32_t  HRESULT;           /* COM HRESULT                        */
-                  ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:146:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winnt.h:394:16: note: previous declaration of 'HRESULT' was here
-   typedef LONG HRESULT;
-                ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:53:16: error: redefinition of 'struct _COORD'
- typedef struct _COORD {
-                ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:74:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincon.h:17:18: note: originally defined here
-   typedef struct _COORD {
-                  ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:56:3: error: conflicting types for 'COORD'
- } COORD;
-   ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:74:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincon.h:20:5: note: previous declaration of 'COORD' was here
-   } COORD,*PCOORD;
-     ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c: In function 'sim_GetDpiForWindow':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:53:18: error: conflicting types for 'GetDC'
-     extern void* GetDC(void*);
-                  ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:72:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winuser.h:2842:25: note: previous declaration of 'GetDC' was here
-   WINUSERAPI HDC WINAPI GetDC(HWND hWnd);
-                         ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:54:18: error: conflicting types for 'ReleaseDC'
-     extern int   ReleaseDC(void*, void*);
-                  ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:72:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winuser.h:2860:25: note: previous declaration of 'ReleaseDC' was here
-   WINUSERAPI int WINAPI ReleaseDC(HWND hWnd,HDC hDC);
-                         ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:55:18: error: conflicting types for 'GetDeviceCaps'
-     extern int   GetDeviceCaps(void*, int);
-                  ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:71:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_dpi.h:13,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:11:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wingdi.h:2851:24: note: previous declaration of 'GetDeviceCaps' was here
-   WINGDIAPI int WINAPI GetDeviceCaps(HDC hdc,int index);
-                        ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c: In function 'sim_GetSystemMetricsForDpi':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_dpi.c:126:16: warning: 'GetSystemMetrics' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
-     extern int GetSystemMetrics(int);
-                ^
-  [FAIL] E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:48:18: error: conflicting types for 'HRESULT'
- typedef int32_t  HRESULT;           /* COM HRESULT                        */
-                  ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:146:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winnt.h:394:16: note: previous declaration of 'HRESULT' was here
-   typedef LONG HRESULT;
-                ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:53:16: error: redefinition of 'struct _COORD'
- typedef struct _COORD {
-                ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:74:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincon.h:17:18: note: originally defined here
-   typedef struct _COORD {
-                  ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:56:3: error: conflicting types for 'COORD'
- } COORD;
-   ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:74:0,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_thread.h:20,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:14:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/wincon.h:20:5: note: previous declaration of 'COORD' was here
-   } COORD,*PCOORD;
-     ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c: In function 'sim_thread_index':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:45:18: warning: 'GetThreadId' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
-     extern DWORD GetThreadId(HANDLE);
-                  ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c: In function 'sim_VirtualAlloc2':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:142:18: warning: 'VirtualAlloc' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
-     extern void* VirtualAlloc(void* addr, SIZE_T size, DWORD type, DWORD protect);
-                  ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c: In function 'sim_MapViewOfFileNuma2':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_thread.c:170:22: warning: 'MapViewOfFileEx' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
-         extern void* MapViewOfFileEx(HANDLE, DWORD, DWORD, DWORD,
-                      ^
-  [FAIL] E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:15:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_time.h:32:16: error: redefinition of 'struct _FILETIME'
- typedef struct _FILETIME {
-                ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_time.h:19,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:15:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:205:18: note: originally defined here
-   typedef struct _FILETIME {
-                  ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:15:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_time.h:35:3: error: conflicting types for 'FILETIME'
- } FILETIME;
-   ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_time.h:19,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:15:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:208:5: note: previous declaration of 'FILETIME' was here
-   } FILETIME,*PFILETIME,*LPFILETIME;
-     ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c: In function 'sim_GetSystemTimePreciseAsFileTime':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:57:27: error: conflicting types for 'GetSystemTimeAsFileTime'
-     extern void __stdcall GetSystemTimeAsFileTime(FILETIME*);
-                           ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winbase.h:36:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:70,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/sim_time.h:19,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:15:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/sysinfoapi.h:38:26: note: previous declaration of 'GetSystemTimeAsFileTime' was here
-   WINBASEAPI VOID WINAPI GetSystemTimeAsFileTime (LPFILETIME lpSystemTimeAsFileTime);
-                          ^
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c: In function 'sim_WaitOnAddress':
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\sim_time.c:96:27: warning: 'Sleep' redeclared without dllimport attribute: previous dllimport ignored [-Wattributes]
-     extern void __stdcall Sleep(DWORD);
-                           ^
-  [FAIL] E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\spoof.c
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\spoof.c:13:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/spoof.h:40:16: error: redefinition of 'struct _OSVERSIONINFOEXW'
- typedef struct _OSVERSIONINFOEXW {
-                ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:146:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/spoof.h:19,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\spoof.c:13:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winnt.h:7197:20: note: originally defined here
-     typedef struct _OSVERSIONINFOEXW {
-                    ^
-In file included from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\spoof.c:13:0:
-E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/spoof.h:52:3: error: conflicting types for 'OSVERSIONINFOEXW'
- } OSVERSIONINFOEXW;
-   ^
-In file included from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/minwindef.h:146:0,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windef.h:8,
-                 from E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/windows.h:69,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/pe_types.h:23,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\..\..\include/win7bridge/spoof.h:19,
-                 from E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\src\sim\spoof.c:13:
-E:/天翼云盘同步盘/18059126980/范思源/程序学习/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include/winnt.h:7209:7: note: previous declaration of 'OSVERSIONINFOEXW' was here
-     } OSVERSIONINFOEXW,*POSVERSIONINFOEXW,*LPOSVERSIONINFOEXW,RTL_OSVERSIONINFOEXW,*PRTL_OSVERSIONINFOEXW;
-       ^
-  [OK]   win7bridge.dll
+  [FAIL] link win7bridge.dll
+E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\bin\sim_dpi.o:sim_dpi.c:(.text+0x5): undefined reference to `SetProcessDPIAware'
+E:\天翼云盘同步盘\18059126980\范思源\程序学习\CompetLayer\scripts\win7_verify\bin\sim_dpi.o:sim_dpi.c:(.text+0x25): undefined reference to `SetProcessDPIAware'
+collect2.exe: error: ld returned 1 exit status
 [build] win7bridge_loader.exe
   [OK]   win7bridge_loader.exe
 [build] pe_patch.exe

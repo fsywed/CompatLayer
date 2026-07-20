@@ -105,28 +105,10 @@ typedef ULONGLONG DWORDLONG;
 
 /* ------------------------------------------------------------------ */
 /* BCrypt AEAD 认证信息结构                                            */
-/*   MinGW <bcrypt.h> 已定义 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO，    */
-/*   且用不同的 guard 宏（_BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED */
-/*   是 MSVC SDK 的）。MinGW 自身的 guard 是 __BCRYPT_AUTHENTICATED_...   */
-/*   检测：直接用 sizeof 测试，若已定义则跳过整个 typedef。               */
+/*   MinGW <bcrypt.h>（经 <wincrypt.h> -> <windows.h> 包含）已定义       */
+/*   BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO，typedef 名不是宏故 #ifndef   */
+/*   无法检测；直接用 SDK 提供的定义，不重复 typedef。                    */
 /* ------------------------------------------------------------------ */
-#ifndef BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
-typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
-    ULONG      cbSize;
-    ULONG      dwInfoVersion;
-    PUCHAR     pbNonce;
-    ULONG      cbNonce;
-    PUCHAR     pbAuthData;
-    ULONG      cbAuthData;
-    PUCHAR     pbTag;
-    ULONG      cbTag;
-    PUCHAR     pbMacContext;
-    ULONG      cbMacContext;
-    ULONG      cbAAD;
-    ULONGLONG  cbData;
-    ULONGLONG  cbDataOffset;
-} BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO;
-#endif
 
 /* NTSTATUS 常量（Windows SDK ntstatus.h 子集） */
 #ifndef STATUS_SUCCESS
