@@ -40,9 +40,8 @@ typedef struct {
 /* ------------------------------------------------------------------ */
 static int sim_thread_index(HANDLE thread)
 {
-#ifdef _WIN32
-    /* Windows：用真实线程 id 取模索引（简化回退，存在冲突可能）        */
-    extern DWORD GetThreadId(HANDLE);
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
+    /* Win7 真机：GetThreadId 已由 windows.h 声明                         */
     DWORD tid = GetThreadId((HANDLE)thread);
     if (tid == 0) {
         return -1;
@@ -137,9 +136,8 @@ void* sim_VirtualAlloc2(HANDLE process, void* addr, SIZE_T size,
     (void)protect;
     (void)extended_params;  /* 占位符/扩展参数语义丢失                   */
 
-#ifdef _WIN32
-    /* Windows：退化为 VirtualAlloc，丢失占位符/替换语义                */
-    extern void* VirtualAlloc(void* addr, SIZE_T size, DWORD type, DWORD protect);
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
+    /* Win7 真机：VirtualAlloc 已由 windows.h 声明                       */
     return VirtualAlloc(NULL, size, type, protect);
 #else
     /* host：用 malloc 模拟（调用方用 free 释放）                       */
@@ -163,12 +161,9 @@ void* sim_MapViewOfFileNuma2(HANDLE filemapping, ULONG_PTR offset,
     (void)base;
     (void)size;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
     {
-        /* 真实实现需解析可变参数并转发到 MapViewOfFileEx；此处仅给出
-         * 回退路径声明，编译时由 _WIN32 分支接管。                     */
-        extern void* MapViewOfFileEx(HANDLE, DWORD, DWORD, DWORD,
-                                     SIZE_T, void*);
+        /* Win7 真机：MapViewOfFileEx 已由 windows.h 声明               */
         return MapViewOfFileEx((HANDLE)filemapping, SIM_PAGE_READWRITE,
                                (DWORD)(offset >> 32), (DWORD)offset,
                                size, base);

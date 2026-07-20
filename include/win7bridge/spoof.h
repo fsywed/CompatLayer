@@ -30,13 +30,20 @@ extern "C" {
 #define SPOOF_BUILD  19045
 
 /* 64 位条件掩码类型（对标 Windows SDK 的 DWORDLONG）                 */
+#ifndef _WIN7BRIDGE_DWORDLONG_DEFINED
 typedef uint64_t DWORDLONG;
+#define _WIN7BRIDGE_DWORDLONG_DEFINED
+#endif
 
 /* ------------------------------------------------------------------ */
 /* OSVERSIONINFOEXW：GetVersionExW / VerifyVersionInfo 使用的版本信息  */
-/* 结构体。字段语义与 Windows SDK 一致；布局在 host 测试中仅用于字段   */
-/* 读写，不跨平台传输，故 wchar_t 取宿主宽度即可。                     */
+/* 结构体。                                                            */
+/* Win7 真机：由 <winnt.h> 提供，跳过自定义                            */
+/* host/syntax-check：用下面的自定义类型                                */
 /* ------------------------------------------------------------------ */
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
+/* Win7 真机：OSVERSIONINFOEXW 已由 windows.h 提供 */
+#else
 typedef struct _OSVERSIONINFOEXW {
     DWORD    dwOSVersionInfoSize;
     DWORD    dwMajorVersion;
@@ -50,6 +57,7 @@ typedef struct _OSVERSIONINFOEXW {
     BYTE     wProductType;
     BYTE     wReserved;
 } OSVERSIONINFOEXW;
+#endif
 
 /* 版本伪装运行时配置                                                   */
 typedef struct _SpoofConfig {

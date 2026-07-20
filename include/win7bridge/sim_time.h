@@ -24,7 +24,12 @@ extern "C" {
 
 /* ------------------------------------------------------------------ */
 /* 类型定义                                                            */
+/* Win7 真机：SIZE_T/FILETIME 由 windows.h 提供，跳过自定义             */
+/* host/syntax-check：用下面的自定义类型                                */
 /* ------------------------------------------------------------------ */
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
+/* Win7 真机：SIZE_T/FILETIME 已由 pe_types.h -> windows.h 提供 */
+#else
 /* SIZE_T：无符号指针宽度整数（对标 Windows SDK SIZE_T），统一取 64 位 */
 typedef uint64_t SIZE_T;
 
@@ -33,6 +38,7 @@ typedef struct _FILETIME {
     DWORD dwLowDateTime;
     DWORD dwHighDateTime;
 } FILETIME;
+#endif
 
 /* ------------------------------------------------------------------ */
 /* 等待返回码与错误码（与 Windows 取值一致）                            */

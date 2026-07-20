@@ -89,8 +89,8 @@ typedef HMODULE HINSTANCE;
 #define HIWORD(l) ((WORD)(((DWORD_PTR)(l) >> 16) & 0xFFFF))
 #endif
 
-/* DisableThreadLibraryCalls：fake_windows.h 未声明 */
-BOOL WINAPI DisableThreadLibraryCalls(HMODULE);
+/* DisableThreadLibraryCalls：MinGW windows.h 已声明，去掉手写原型避免
+ * 'redeclared without dllimport attribute' 警告（MinGW 用 dllimport）。 */
 
 /* NTSTATUS：BCryptOpenAlgorithmProvider 返回类型 */
 #ifndef _NTSTATUS_DEFINED
@@ -98,18 +98,19 @@ typedef LONG NTSTATUS;
 #define _NTSTATUS_DEFINED
 #endif
 
-/* DWORDLONG：fake_windows.h 仅有 ULONGLONG，Windows SDK 中二者等价 */
+/* DWORDLONG：Windows SDK 中已有，跳过自定义避免冲突 */
 #ifndef DWORDLONG
 typedef ULONGLONG DWORDLONG;
 #endif
 
 /* ------------------------------------------------------------------ */
-/* BCrypt AEAD 认证信息结构（Windows SDK bcrypt.h 中的定义，本地复制）  */
-/*   用于 BCryptEncrypt/BCryptDecrypt 的 pPaddingInfo 参数。            */
-/*   字段顺序与 Windows SDK 一致，编译器按目标架构自动对齐。            */
+/* BCrypt AEAD 认证信息结构                                            */
+/*   MinGW <bcrypt.h> 已定义 BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO，    */
+/*   且用不同的 guard 宏（_BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED */
+/*   是 MSVC SDK 的）。MinGW 自身的 guard 是 __BCRYPT_AUTHENTICATED_...   */
+/*   检测：直接用 sizeof 测试，若已定义则跳过整个 typedef。               */
 /* ------------------------------------------------------------------ */
-#ifndef _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED
-#define _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED
+#ifndef BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
 typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
     ULONG      cbSize;
     ULONG      dwInfoVersion;
@@ -125,7 +126,7 @@ typedef struct _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO {
     ULONGLONG  cbData;
     ULONGLONG  cbDataOffset;
 } BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO;
-#endif /* _BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO_DEFINED */
+#endif
 
 /* NTSTATUS 常量（Windows SDK ntstatus.h 子集） */
 #ifndef STATUS_SUCCESS

@@ -53,8 +53,7 @@ int sim_GetSystemTimePreciseAsFileTime(void* out_filetime)
     }
 
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
-    /* Windows：回退到 GetSystemTimeAsFileTime（精度 ~15.6ms，语义一致） */
-    extern void __stdcall GetSystemTimeAsFileTime(FILETIME*);
+    /* Win7 真机：GetSystemTimeAsFileTime 已由 windows.h 声明             */
     GetSystemTimeAsFileTime(ft);
 #else
     /* host 测试 / 语法检查：用 clock_gettime(CLOCK_REALTIME) 填充 FILETIME */
@@ -92,9 +91,7 @@ int sim_WaitOnAddress(volatile void* addr, void* compare_addr,
 
     /* 2) 相等则等待唤醒或超时 */
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
-    /* Windows 简化实现：轮询 + Sleep（真实实现应用事件对象阻塞） */
-    extern void __stdcall Sleep(DWORD);
-    extern unsigned long long __stdcall GetTickCount64(void);
+    /* Win7 真机：Sleep / GetTickCount64 已由 windows.h 声明              */
     {
         unsigned long long deadline =
             GetTickCount64() + (unsigned long long)timeout_ms;

@@ -27,7 +27,12 @@ extern "C" {
 
 /* ------------------------------------------------------------------ */
 /* 类型补充（pe_types.h 已提供 HANDLE=void*、DWORD=uint32_t）          */
+/* Win7 真机分支：pe_types.h 已 #include <windows.h>，这些类型已定义    */
+/* host/syntax-check 分支：用下面的自定义类型                           */
 /* ------------------------------------------------------------------ */
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
+/* Win7 真机：SIZE_T/BOOL/HRESULT/ULONG_PTR/SHORT/COORD 全部由 windows.h 提供 */
+#else
 #ifndef _WIN7BRIDGE_SIZE_T_DEFINED
 typedef uint64_t SIZE_T;            /* 任务约定：64 位                    */
 #define _WIN7BRIDGE_SIZE_T_DEFINED
@@ -54,8 +59,9 @@ typedef struct _COORD {
     SHORT X;
     SHORT Y;
 } COORD;
+#endif  /* Win7 真机 / host */
 
-/* HRESULT 常用值                                                      */
+/* HRESULT 常用值（两边都可能用到，用 #ifndef 守卫）                    */
 #ifndef S_OK
 #define S_OK            ((HRESULT)0)
 #endif
