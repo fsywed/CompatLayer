@@ -59,9 +59,18 @@
 - [x] Task 3.3: AppInit_DLLs 与 IFEO VerifierDlls 兜底（可选路径，标注风险）[P]
   - [x] SubTask 3.3.1: 实现注册表注入路径，UI 显式标注"会触发反调试检测/与沙箱冲突"
   - [x] SubTask 3.3.2: 实现卸载时清理注册表条目，保证可逆
-- [ ] Task 3.4: 配置 GUI 与右键属性页 [D:3.1]
+- [x] Task 3.4: 配置 GUI 与右键属性页 [D:3.1]
   - [x] SubTask 3.4.1: 实现按程序粒度配置存储（配置文件，不写 HKLM 系统键）
-  - [ ] SubTask 3.4.2: 实现资源管理器右键属性页 Shell 扩展（启用/关闭、选择注入路径、版本伪装选项）
+  - [x] SubTask 3.4.2: 实现资源管理器右键属性页 Shell 扩展（启用/关闭、选择注入路径、版本伪装选项）
+    > 进度（2026-07-20）：
+    > - include/win7bridge/shellext.h：声明 5 个 host-testable 接口 + 注入路径枚举
+    > - src/shell/shellext_core.c：纯逻辑实现（path 互转/校验/toggle 联动/摘要/综合校验），
+    >   全部无 <windows.h> 依赖，host gcc 可测
+    > - src/shell/shellext_dll.c：Windows COM 主体（IShellExtInit + IShellPropSheetExt
+    >   + IClassFactory + DllRegisterServer/DllUnregisterServer + DialogProc），
+    >   通过 #if 平台隔离；host/syntax-check 走桩，3.2.2 真机阶段联 .rc 资源验证
+    > - tests/test_shellext.c：5 个用例覆盖全部接口边界，65 断言全过
+    > - make test 全套 829 断言全绿（+65 来自 test_shellext）
   - [x] SubTask 3.4.3: 实现自动推荐：扫描目标 EXE 导入表/manifest，自动推断需要的兼容选项
   - [x] SubTask 3.4.4: 在 UI 对 WinRT/UWP/D3D12/VBS/TPM2.0 依赖程序显式标注"不支持"
     - 进展：推荐引擎新增 `has_vbs_dependency`（vgauth.dll/vmcompute.dll）与 `has_tpm_dependency`（tbs.dll）字段，命中即置 `unsupported_overall=1` 并加入不可解列表（含原因 "VBS requires Win10 HVCI" / "TPM2.0 TBS requires Win8+"）。
