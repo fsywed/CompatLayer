@@ -54,11 +54,13 @@ if "%MODE%"=="patched_subsystem" (
     REM Step 1: pe_patch set subsystem to 10.0 (bad EXE)
     REM Step 2: pe_patch fix subsystem back to 6.1 (good EXE)
     REM Step 3: win7bridge_loader launches the fixed EXE
+    REM   Use --method remote_thread: APC needs alertable wait in target
+    REM   process, which console-mode test cases do not perform.
     "%BIN%\pe_patch.exe" "%EXE%" "%EXE%.bad" --set-subsystem 10.0 >> "%LOG%" 2>&1
     if exist "%EXE%.bad" (
         "%BIN%\pe_patch.exe" "%EXE%.bad" "%EXE%.fixed" --fix-subsystem >> "%LOG%" 2>&1
         if exist "%EXE%.fixed" (
-            "%BIN%\win7bridge_loader.exe" --dll "%BIN%\win7bridge.dll" "%EXE%.fixed" >> "%LOG%" 2>&1
+            "%BIN%\win7bridge_loader.exe" --dll "%BIN%\win7bridge.dll" --method remote_thread --verbose "%EXE%.fixed" >> "%LOG%" 2>&1
             set ERRLVL=!errorlevel!
         ) else (
             echo [FAIL] %EXE%.fixed not generated >> "%LOG%"
@@ -72,7 +74,7 @@ if "%MODE%"=="patched_subsystem" (
 )
 
 if "%MODE%"=="loader" (
-    "%BIN%\win7bridge_loader.exe" --dll "%BIN%\win7bridge.dll" "%EXE%" >> "%LOG%" 2>&1
+    "%BIN%\win7bridge_loader.exe" --dll "%BIN%\win7bridge.dll" --method remote_thread --verbose "%EXE%" >> "%LOG%" 2>&1
     set ERRLVL=!errorlevel!
     goto :case_done
 )
