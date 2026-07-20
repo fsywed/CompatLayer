@@ -61,29 +61,62 @@ typedef struct _SpoofConfig {
 
 /* ------------------------------------------------------------------ */
 /* VerifyVersionInfo 的 VER_* 维度常量（与 Windows SDK 取值一致）       */
+/* 仅在未被 <winnt.h> 定义时才定义，避免 Win7 真机重定义警告             */
 /* ------------------------------------------------------------------ */
+#ifndef VER_MINORVERSION
 #define VER_MINORVERSION        0x00000001
+#endif
+#ifndef VER_MAJORVERSION
 #define VER_MAJORVERSION        0x00000002
+#endif
+#ifndef VER_BUILDNUMBER
 #define VER_BUILDNUMBER         0x00000004
+#endif
+#ifndef VER_PLATFORMID
 #define VER_PLATFORMID          0x00000008
+#endif
+#ifndef VER_SERVICEPACKMINOR
 #define VER_SERVICEPACKMINOR    0x00000010
+#endif
+#ifndef VER_SERVICEPACKMAJOR
 #define VER_SERVICEPACKMAJOR    0x00000020
+#endif
+#ifndef VER_SUITENAME
 #define VER_SUITENAME           0x00000040
+#endif
+#ifndef VER_PRODUCT_TYPE
 #define VER_PRODUCT_TYPE        0x00000080
+#endif
 
 /* conditionMask 中每 3 位一组的比较算子                              */
+#ifndef VER_EQUAL
 #define VER_EQUAL               1
+#endif
+#ifndef VER_GREATER
 #define VER_GREATER             2
+#endif
+#ifndef VER_GREATER_EQUAL
 #define VER_GREATER_EQUAL       3
+#endif
+#ifndef VER_LESS
 #define VER_LESS                4
+#endif
+#ifndef VER_LESS_EQUAL
 #define VER_LESS_EQUAL          5
+#endif
+#ifndef VER_AND
 #define VER_AND                 6   /* 仅 VER_SUITENAME 使用          */
+#endif
 
 /* dwPlatformId 取值                                                   */
+#ifndef VER_PLATFORM_WIN32_NT
 #define VER_PLATFORM_WIN32_NT   2
+#endif
 
 /* wProductType 取值                                                   */
+#ifndef VER_NT_WORKSTATION
 #define VER_NT_WORKSTATION      1
+#endif
 
 /* ------------------------------------------------------------------ */
 /* 接口函数                                                            */

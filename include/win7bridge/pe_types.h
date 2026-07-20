@@ -26,6 +26,9 @@
 extern "C" {
 #endif
 
+/* Windows SDK 没有 QWORD 类型，统一别名到 UINT64 */
+typedef UINT64 QWORD;
+
 /* host/syntax-check 路径才需要下面的自定义类型 */
 #else  /* !(_WIN32 && !HOST_TEST && !SYNTAX_CHECK) */
 

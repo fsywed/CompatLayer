@@ -30,6 +30,13 @@ extern "C" {
 #define PE_ERR_BAD_OPTIONAL  (-5) /* OptionalHeader Magic 未知          */
 
 /*
+ * Win7 SP1 子系统版本常量
+ * Win7 = 6.1，所有 > 6.1 的子系统版本都需修正为 6.1
+ */
+#define WIN7_SUBSYSTEM_MAJOR  6
+#define WIN7_SUBSYSTEM_MINOR  1
+
+/*
  * PeInfo - PE 解析结果句柄
  *
  * 持有映射数据指针与各关键结构指针。所有指针指向调用者传入的缓冲区，
