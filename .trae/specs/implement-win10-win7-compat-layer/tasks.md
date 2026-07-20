@@ -34,7 +34,7 @@
   - [x] SubTask 2.3.1: 设计并实现"虚拟名 → 实现源"映射表配置格式（JSON 或 INI），覆盖 `api-ms-win-core-*`、`api-ms-win-crt-*`、`ext-ms-win-*`
   - [x] SubTask 2.3.2: 实现解析逻辑：导入表出现 `api-ms-win-*` 名时查表，转发到 Win7 真实 DLL 或本地模拟层
   - [x] SubTask 2.3.3: 预置映射表初版：含 `api-ms-win-core-synch-l1-2-0`、`api-ms-win-core-timezone-l1-1-0`、`api-ms-win-core-memory-l1-1-3+`、`api-ms-win-core-winrt-*`（标注不可解）等
-  - [ ] SubTask 2.3.4: 验证：测试程序导入 `api-ms-win-core-synch-l1-2-0.dll` 能正常解析到 `WaitOnAddress` 本地实现
+  - [x] SubTask 2.3.4: 验证：测试程序导入 `api-ms-win-core-synch-l1-2-0.dll` 能正常解析到 `WaitOnAddress` 本地实现
 
 ## 阶段 3：注入路径与配置
 
@@ -52,7 +52,7 @@
 - [ ] Task 3.4: 配置 GUI 与右键属性页 [D:3.1]
   - [x] SubTask 3.4.1: 实现按程序粒度配置存储（配置文件，不写 HKLM 系统键）
   - [ ] SubTask 3.4.2: 实现资源管理器右键属性页 Shell 扩展（启用/关闭、选择注入路径、版本伪装选项）
-  - [ ] SubTask 3.4.3: 实现自动推荐：扫描目标 EXE 导入表/manifest，自动推断需要的兼容选项
+  - [x] SubTask 3.4.3: 实现自动推荐：扫描目标 EXE 导入表/manifest，自动推断需要的兼容选项
   - [ ] SubTask 3.4.4: 在 UI 对 WinRT/UWP/D3D12/VBS/TPM2.0 依赖程序显式标注"不支持"
 
 ## 阶段 4：模拟层（L3-L4）
@@ -87,7 +87,7 @@
   - [x] SubTask 5.1.1: 实现日志记录：被拦截的 API、缺失导出查询、反调试触发点、版本伪装命中
   - [x] SubTask 5.1.2: 实现"一键导出诊断报告"（依赖缺失树、调用流摘要）
 - [ ] Task 5.2: 兼容性测试矩阵 [D:5.1]
-  - [ ] SubTask 5.2.1: 建立测试用例集：含高子系统版本 EXE、导入 `api-ms-win-core-synch-l1-2-0` 的 EXE、`GetProcAddress` 动态解析新 API 的 EXE、自检 Win10 版本的 EXE
+  - [x] SubTask 5.2.1: 建立测试用例集：含高子系统版本 EXE、导入 `api-ms-win-core-synch-l1-2-0` 的 EXE、`GetProcAddress` 动态解析新 API 的 EXE、自检 Win10 版本的 EXE
   - [ ] SubTask 5.2.2: 在真实 Win7 SP1 + KB 环境验证每个用例
   - [ ] SubTask 5.2.3: 建立"已知可运行/不可运行应用"清单（参考 VxKex 的 Application Compatibility List）
 - [ ] Task 5.3: 可重复构建与签名 [D:5.2]
