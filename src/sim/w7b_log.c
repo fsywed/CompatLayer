@@ -21,16 +21,10 @@
 /* ------------------------------------------------------------------ */
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
 /* Win7 真实目标：CRITICAL_SECTION + GetTickCount */
-typedef struct {
-    /* CRITICAL_SECTION 在 windows.h 中定义；这里只预留对齐空间 */
-    void* opaque[5];   /* 5*8=40 字节，覆盖 Win7 CRITICAL_SECTION */
-} w7b_critsec;
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-extern void WINAPI InitializeCriticalSection(w7b_critsec* lpCriticalSection);
-extern void WINAPI EnterCriticalSection(w7b_critsec* lpCriticalSection);
-extern void WINAPI LeaveCriticalSection(w7b_critsec* lpCriticalSection);
-extern void WINAPI DeleteCriticalSection(w7b_critsec* lpCriticalSection);
-extern unsigned long WINAPI GetTickCount(void);
+typedef CRITICAL_SECTION w7b_critsec;
 
 #define W7B_LOG_LOCK_INIT(cs)   InitializeCriticalSection(&(cs))
 #define W7B_LOG_LOCK_DELETE(cs) DeleteCriticalSection(&(cs))
@@ -249,8 +243,8 @@ int w7b_log_dump_to_file(const char* path)
     if (dc.fp == NULL) return -1;
 
     fprintf(dc.fp, "# Win7Bridge log dump\n");
-    fprintf(dc.fp, "# entries: %zu / %d\n\n",
-            g_log.count, W7B_LOG_CAPACITY);
+    fprintf(dc.fp, "# entries: %lu / %d\n\n",
+            (unsigned long)g_log.count, W7B_LOG_CAPACITY);
 
     n = w7b_log_foreach(dump_callback, &dc);
     fclose(dc.fp);

@@ -6,9 +6,28 @@
  * 用原生 gcc 编译为 host 测试程序验证，最终目标仍是 MinGW-w64 + Windows。
  *
  * 结构体布局严格按 1 字节对齐，与磁盘/内存中的 PE 镜像布局一致。
+ *
+ * 平台隔离：当 _WIN32 已定义且非 HOST_TEST/SYNTAX_CHECK 时，直接包含
+ * <windows.h>，复用 <winnt.h> 的类型定义，避免重定义冲突。
  */
 #ifndef WIN7BRIDGE_PE_TYPES_H
 #define WIN7BRIDGE_PE_TYPES_H
+
+/* ------------------------------------------------------------------ */
+/* 平台分支：Win7 真机用 <windows.h>，host/syntax-check 用自定义类型    */
+/* ------------------------------------------------------------------ */
+#if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST) && !defined(WIN7BRIDGE_SYNTAX_CHECK)
+
+/* Win7 真机：直接复用 Windows SDK 类型，不再自定义 */
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* host/syntax-check 路径才需要下面的自定义类型 */
+#else  /* !(_WIN32 && !HOST_TEST && !SYNTAX_CHECK) */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -296,5 +315,7 @@ _Static_assert(sizeof(IMAGE_SECTION_HEADER) == IMAGE_SIZEOF_SECTION_HEADER,
 #ifdef __cplusplus
 }
 #endif
+
+#endif  /* !(_WIN32 && !HOST_TEST && !SYNTAX_CHECK) */
 
 #endif /* WIN7BRIDGE_PE_TYPES_H */

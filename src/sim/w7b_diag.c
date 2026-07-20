@@ -209,12 +209,16 @@ int w7b_diag_export_report(const char* path, const W7bDiagInput* input)
 
     /* 时间戳（UTC） */
     now = time(NULL);
-    if (gmtime_r(&now, &tm_now) != NULL) {
-        strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S UTC",
-                 &tm_now);
-    } else {
-        strncpy(time_buf, "(unknown)", sizeof(time_buf) - 1);
-        time_buf[sizeof(time_buf) - 1] = 0;
+    {
+        struct tm* tmp = gmtime(&now);
+        if (tmp != NULL) {
+            tm_now = *tmp;
+            strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S UTC",
+                     &tm_now);
+        } else {
+            strncpy(time_buf, "(unknown)", sizeof(time_buf) - 1);
+            time_buf[sizeof(time_buf) - 1] = 0;
+        }
     }
 
     /* ---- 头部 ---- */

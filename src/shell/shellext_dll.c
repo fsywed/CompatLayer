@@ -58,7 +58,9 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>   /* HDROP, DragQueryFileW */
 #include <shlobj.h>
+#include <shlwapi.h>    /* SHDeleteKeyW */
 #include <objbase.h>
 
 /* Win7 SDK 缺少时显式给出 */
@@ -538,7 +540,7 @@ STDAPI DllCanUnloadNow(void)
 /* 把 CLSID 转宽字符 "{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}" */
 static void _clsid_to_wstr(const CLSID* c, wchar_t* out, size_t cap)
 {
-    StringFromGUID2(*c, out, (int)cap);
+    StringFromGUID2(c, out, (int)cap);
 }
 
 /* 注册到 HKCR\<progid>\shellex\PropertySheetHandlers\<handler> */

@@ -17,8 +17,8 @@
 /* 平台隔离：默认配置目录                                               */
 /* ------------------------------------------------------------------ */
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
-extern unsigned long WINAPI GetEnvironmentVariableA(
-    const char* lpName, char* lpBuffer, unsigned long nSize);
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #define W7B_CFG_GETENV(name, buf, cap) \
     GetEnvironmentVariableA((name), (buf), (unsigned long)(cap))
 #define W7B_CFG_PATH_SEP '\\'
