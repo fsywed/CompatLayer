@@ -21,8 +21,21 @@ BOOL sim_SetProcessDpiAwarenessContext(int value)
     (void)value;   /* DPI_AWARENESS_CONTEXT 值在回退路径下忽略            */
 
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
-    /* Win7 真机：SetProcessDPIAware 已由 windows.h 声明，直接调用       */
-    return SetProcessDPIAware() ? TRUE : FALSE;
+    /* Win7 真机：SetProcessDPIAware 在 user32.dll，用 GetProcAddress 动态
+     * 加载避免 MinGW libuser32.a 缺该符号的链接问题。                   */
+    typedef BOOL (WINAPI *PFN_SetProcessDPIAware)(void);
+    HMODULE h = LoadLibraryW(L"user32.dll");
+    if (h != NULL) {
+        PFN_SetProcessDPIAware p = (PFN_SetProcessDPIAware)
+            GetProcAddress(h, "SetProcessDPIAware");
+        if (p != NULL) {
+            BOOL ok = p();
+            FreeLibrary(h);
+            return ok ? TRUE : FALSE;
+        }
+        FreeLibrary(h);
+    }
+    return FALSE;
 #else
     /* host：固定成功                                                  */
     return TRUE;
@@ -34,7 +47,19 @@ HRESULT sim_SetProcessDpiAwareness(int value)
     (void)value;   /* PROCESS_DPI_AWARENESS 值在回退路径下忽略            */
 
 #if defined(_WIN32) && !defined(WIN7BRIDGE_HOST_TEST)
-    return SetProcessDPIAware() ? S_OK : E_FAIL;
+    typedef BOOL (WINAPI *PFN_SetProcessDPIAware)(void);
+    HMODULE h = LoadLibraryW(L"user32.dll");
+    if (h != NULL) {
+        PFN_SetProcessDPIAware p = (PFN_SetProcessDPIAware)
+            GetProcAddress(h, "SetProcessDPIAware");
+        if (p != NULL) {
+            BOOL ok = p();
+            FreeLibrary(h);
+            return ok ? S_OK : E_FAIL;
+        }
+        FreeLibrary(h);
+    }
+    return E_FAIL;
 #else
     /* host：固定成功                                                  */
     return S_OK;
