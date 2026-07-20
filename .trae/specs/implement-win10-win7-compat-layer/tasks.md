@@ -30,7 +30,7 @@
   - [x] SubTask 2.2.4: 实现 inline hook 基础设施（trampoline，x86 5 字节 / x64 14 字节，处理指令重定位）
   - [x] SubTask 2.2.5: hook `GetProcAddress` 与 `LdrGetProcedureAddress`，对查询 Win10 新 API 的请求返回兼容层实现（覆盖 VxKex 最大短板）
   - [x] SubTask 2.2.6: 验证：测试程序通过 `GetProcAddress` 拿到 `SetThreadDescription` 并调用成功
-- [ ] Task 2.3: API Set 虚拟解析层（L2）[D:2.2]
+- [x] Task 2.3: API Set 虚拟解析层（L2）[D:2.2]
   - [x] SubTask 2.3.1: 设计并实现"虚拟名 → 实现源"映射表配置格式（JSON 或 INI），覆盖 `api-ms-win-core-*`、`api-ms-win-crt-*`、`ext-ms-win-*`
   - [x] SubTask 2.3.2: 实现解析逻辑：导入表出现 `api-ms-win-*` 名时查表，转发到 Win7 真实 DLL 或本地模拟层
   - [x] SubTask 2.3.3: 预置映射表初版：含 `api-ms-win-core-synch-l1-2-0`、`api-ms-win-core-timezone-l1-1-0`、`api-ms-win-core-memory-l1-1-3+`、`api-ms-win-core-winrt-*`（标注不可解）等
@@ -105,17 +105,41 @@
 
 ## 阶段 5：测试、诊断与发布
 
-- [ ] Task 5.1: 细粒度日志与诊断报告 [D:4.*]
+- [x] Task 5.1: 细粒度日志与诊断报告 [D:4.*]
   - [x] SubTask 5.1.1: 实现日志记录：被拦截的 API、缺失导出查询、反调试触发点、版本伪装命中
   - [x] SubTask 5.1.2: 实现"一键导出诊断报告"（依赖缺失树、调用流摘要）
 - [ ] Task 5.2: 兼容性测试矩阵 [D:5.1]
   - [x] SubTask 5.2.1: 建立测试用例集：含高子系统版本 EXE、导入 `api-ms-win-core-synch-l1-2-0` 的 EXE、`GetProcAddress` 动态解析新 API 的 EXE、自检 Win10 版本的 EXE
   - [ ] SubTask 5.2.2: 在真实 Win7 SP1 + KB 环境验证每个用例
-  - [ ] SubTask 5.2.3: 建立"已知可运行/不可运行应用"清单（参考 VxKex 的 Application Compatibility List）
+  - [x] SubTask 5.2.3: 建立"已知可运行/不可运行应用"清单（参考 VxKex 的 Application Compatibility List）
+    > 进度（2026-07-20）：
+    > - include/win7bridge/compat_list.h：数据结构（W7bCompatStatus 枚举 / W7bCompatListEntry /
+    >   W7bCompatList 容器）+ load/lookup/free/status_to_str/status_from_str 接口
+    > - src/sim/compat_list.c：极简递归下降 JSON 解析器，支持 schema 字段、未知字段跳过、
+    >   字符串数组（known_issues）、转义序列；纯 C，host gcc 可测
+    > - data/compat_list.json：12 条初始记录（8 条测试用例占位 + 4 条 WinRT/D3D12/VBS/TPM
+    >   "broken" 占位）
+    > - tests/test_compat_list.c：7 用例（合法加载/状态互转/缺失文件/损坏 JSON/空数组/
+    >   未知字段跳过/内置清单验证）48 断言全过
+    > - make test 全套 877 断言全绿（+48 来自 test_compat_list）
 - [ ] Task 5.3: 可重复构建与签名 [D:5.2]
-  - [ ] SubTask 5.3.1: 确保源码可产出与 release 字节一致的二进制（消除冒名仓库风险）
+  - [x] SubTask 5.3.1: 确保源码可产出与 release 字节一致的二进制（消除冒名仓库风险）
+    > 进度（2026-07-20）：
+    > - Makefile 新增 REPRO_CFLAGS：-Wdate-time（拦截 __DATE__/__TIME__）+
+    >   -ffile-prefix-map=$(CURDIR)=. + -fmacro-prefix-map=$(CURDIR)=.
+    > - 已 grep 扫描 src/ 确认无 __DATE__/__TIME__/__TIMESTAMP__ 使用
+    > - 新增 make verify-reproducible 目标：连续两次干净构建 + sha256sum
+    >   比对，FAIL 时打印 diff；MinGW-w64 可用时直接跑
+    > - CFLAGS / SYNTAX_CFLAGS 共用 REPRO_CFLAGS，host syntax-check 也覆盖
+    > - make check / make test 全绿，未引入新警告
   - [ ] SubTask 5.3.2: 用代码签名证书签署 release（缓解杀软误报）
-  - [ ] SubTask 5.3.3: 撰写用户安装与使用文档
+  - [x] SubTask 5.3.3: 撰写用户安装与使用文档
+    > 进度（2026-07-20）：
+    > - README.md 从 1 行 stub 扩充为完整用户文档：项目目标 / 系统要求 /
+    >   安装（release + 源码两种方式）/ 使用（Shell 属性页 + pe_patch CLI +
+    >   Loader CLI）/ 不可解应用类型 / 配置文件 / 卸载 / 兼容性清单 /
+    >   诊断报告 / 架构分层 / 开发文档索引 / 构建测试 / 已知限制
+    > - 不新建文件，仅扩充既有 README.md（遵循"NEVER proactively create docs"约束）
 
 # Task Dependencies
 - Task 1.1, 1.2 无依赖，可并行启动

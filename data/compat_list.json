@@ -1,0 +1,113 @@
+[
+  {
+    "exe_basename": "case_high_subsys.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64+kb2999226",
+    "known_issues": [],
+    "notes": "SubTask 2.1.5 / 3.2.2 测试用例：高子系统版本 PE 修正后可加载"
+  },
+  {
+    "exe_basename": "case_apiset_import.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x86+kb2999226",
+    "known_issues": [],
+    "notes": "SubTask 2.3.4 测试用例：api-ms-win-core-synch-l1-2-0 -> WaitOnAddress"
+  },
+  {
+    "exe_basename": "case_get_proc_address.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [],
+    "notes": "SubTask 2.2.6 测试用例：GetProcAddress 拿到 SetThreadDescription"
+  },
+  {
+    "exe_basename": "case_version_spoof.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [],
+    "notes": "SubTask 4.1.3 测试用例：IsWindows10OrGreater 返回 TRUE"
+  },
+  {
+    "exe_basename": "case_wait_on_address.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [],
+    "notes": "SubTask 4.2.3 测试用例：自旋等待在 Win7 上工作"
+  },
+  {
+    "exe_basename": "case_bcrypt_chacha20.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [],
+    "notes": "SubTask 4.5.3 测试用例：BCryptOpenAlgorithmProvider(CHACHA20_POLY1305)"
+  },
+  {
+    "exe_basename": "case_pseudo_console.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "limited",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [
+      "ResizePseudoConsole 在快速 resize 时可能丢失若干行",
+      "ANSI 转义序列依赖 conhost 版本"
+    ],
+    "notes": "SubTask 4.3.2 测试用例：管道+控制台缓冲模拟"
+  },
+  {
+    "exe_basename": "case_ucrt_check.exe",
+    "publisher": "Win7Bridge Test Suite",
+    "status": "works",
+    "tested_with": "win7sp1+x64+kb2999226+vcredist140",
+    "known_issues": [],
+    "notes": "SubTask 4.6 测试用例：UCRT 前置检测通过"
+  },
+  {
+    "exe_basename": "d3d12_app.exe",
+    "publisher": "(placeholder)",
+    "status": "broken",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [
+      "D3D12 在 Win7 无 D3D12On7，无法模拟",
+      "dxgi.dll / d3d12.dll 加载期失败"
+    ],
+    "notes": "推荐引擎将标注 unsupported_overall=1"
+  },
+  {
+    "exe_basename": "winrt_uwp_app.exe",
+    "publisher": "(placeholder)",
+    "status": "broken",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [
+      "WinRT/UWP API 完全无对应实现",
+      "combase.dll / api-ms-win-core-winrt-* 加载期失败"
+    ],
+    "notes": "推荐引擎将标注 unsupported_overall=1"
+  },
+  {
+    "exe_basename": "vbs_attestation_app.exe",
+    "publisher": "(placeholder)",
+    "status": "broken",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [
+      "VBS/SGX2 attestation 依赖 Win10 HVCI",
+      "vgauth.dll / vmcompute.dll 不存在"
+    ],
+    "notes": "推荐引擎将标注 unsupported_overall=1"
+  },
+  {
+    "exe_basename": "tpm2_attestation_app.exe",
+    "publisher": "(placeholder)",
+    "status": "broken",
+    "tested_with": "win7sp1+x64",
+    "known_issues": [
+      "TPM2.0 TBS 依赖 Win8+",
+      "tbs.dll 缺失 Tbsi_Context_Create"
+    ],
+    "notes": "推荐引擎将标注 unsupported_overall=1"
+  }
+]

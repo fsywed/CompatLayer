@@ -14,10 +14,18 @@ CC_HOST := gcc
 PYTHON  := python3
 
 # ---- flags ----
-CFLAGS        := -Wall -Wextra -O2 -std=gnu11
+# Reproducible build (SubTask 5.3.1)：
+#   -Wdate-time                   ：警告意外使用 __DATE__/__TIME__/__TIMESTAMP__
+#   -ffile-prefix-map / -fmacro-prefix-map ：抹掉构建目录绝对路径（仅影响
+#                                   __FILE__ 与 DWARF，不影响代码语义）
+#   SOURCE_DATE_EPOCH             ：外部可注入确定性时间戳（标准约定）
+REPRO_CFLAGS  := -Wdate-time \
+                 -ffile-prefix-map=$(CURDIR)=. \
+                 -fmacro-prefix-map=$(CURDIR)=.
+CFLAGS        := -Wall -Wextra -O2 -std=gnu11 $(REPRO_CFLAGS)
 # Syntax-check only: no codegen, defines WIN7BRIDGE_SYNTAX_CHECK so sources
 # can stub out Windows-specific includes/declarations during host checks.
-SYNTAX_CFLAGS := -Wall -Wextra -std=gnu11 -fsyntax-only -DWIN7BRIDGE_SYNTAX_CHECK
+SYNTAX_CFLAGS := -Wall -Wextra -std=gnu11 -fsyntax-only -DWIN7BRIDGE_SYNTAX_CHECK $(REPRO_CFLAGS)
 
 INCLUDES := -Iinclude
 
@@ -30,7 +38,8 @@ OBJ_X64 := $(patsubst src/%.c,build/x64/%.o,$(SRC_C))
 PYTHON_TOOLS := scripts/pe_scan.py scripts/config_gen.py scripts/diag_parse.py
 HOST_HEADERS := win7bridge/version.h
 
-.PHONY: all x86 x64 check syntax-check python-check test clean help
+.PHONY: all x86 x64 check syntax-check python-check test clean help \
+        verify-reproducible
 
 all: x86 x64
 
@@ -118,6 +127,26 @@ clean:
 	@echo "[clean] removing build/ and Python bytecode caches"
 	@rm -rf build/ scripts/__pycache__
 
+# SubTask 5.3.1：连续两次干净构建 + sha256sum 比对，确认字节一致
+# 缺点：仅在 MinGW-w64 可用时才能跑（需要 x86/x64 cross 工具链）
+verify-reproducible:
+	@echo "[repro] 第一次干净构建..."
+	@$(MAKE) clean >/dev/null
+	@$(MAKE) all >/dev/null 2>&1 || { echo "[repro] 第一次构建失败"; exit 1; }
+	@sha256sum $$(find build -type f -name '*.o' | sort) > /tmp/w7b_repro_sha1.txt
+	@echo "[repro] 第二次干净构建..."
+	@$(MAKE) clean >/dev/null
+	@$(MAKE) all >/dev/null 2>&1 || { echo "[repro] 第二次构建失败"; exit 1; }
+	@sha256sum $$(find build -type f -name '*.o' | sort) > /tmp/w7b_repro_sha2.txt
+	@if diff -u /tmp/w7b_repro_sha1.txt /tmp/w7b_repro_sha2.txt >/dev/null; then \
+		echo "[repro] PASS：两次构建产物 sha256 完全一致"; \
+		rm -f /tmp/w7b_repro_sha1.txt /tmp/w7b_repro_sha2.txt; \
+	else \
+		echo "[repro] FAIL：两次构建产物不一致（见 diff）"; \
+		diff -u /tmp/w7b_repro_sha1.txt /tmp/w7b_repro_sha2.txt; \
+		exit 1; \
+	fi
+
 help:
 	@echo "Win7Bridge build targets:"
 	@echo "  make            build x86 + x64 objects (MinGW-w64 cross-compile)"
@@ -125,6 +154,7 @@ help:
 	@echo "  make x64        build x64 objects only"
 	@echo "  make check      native gcc syntax check + Python tool self-check"
 	@echo "  make test       build and run host tests under tests/"
+	@echo "  make verify-reproducible  连续两次干净构建并比对 sha256 (SubTask 5.3.1)"
 	@echo "  make clean      remove build/ and Python bytecode caches"
 	@echo "  make help       this message"
 	@echo ""
